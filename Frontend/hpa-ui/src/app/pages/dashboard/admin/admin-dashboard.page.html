@@ -1,0 +1,22 @@
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class = "mt-8">
+    <h1 class="text-gray-900 text-xl font-bold">Admin Dashboard</h1>
+    <p class="text-gray-500 text-lg mt-0.5">System overview and platform analytics</p>
+  </div>
+
+  <div class ="mt-8">
+    <p-card>
+      <div class="flex items-center gap-3">
+        <i class="pi pi-microchip-ai text-lg"></i>
+        <p class="text-gray-700 text-lg">AI Model Status: </p>
+        
+        <div class="flex items-center gap-1">
+          <i class="pi text-lg" [ngClass]="statusAi() ? 'pi-check-circle text-green-600' : 'pi-times-circle text-red-600'"></i>
+          <p class="text-lg" [ngClass]="statusAi() ? 'text-green-600' : 'text-red-600'"> {{ getStatus() }}</p>
+        </div>
+
+        <div class="w-px h-6 bg-gray-300"></div>
+      </div>
+    </p-card>
+  </div>
+</div>
