@@ -4,19 +4,267 @@
     <p class="text-gray-500 text-lg mt-0.5">System overview and platform analytics</p>
   </div>
 
-  <div class ="mt-8">
+  <div class="mt-8">
     <p-card>
-      <div class="flex items-center gap-3">
-        <i class="pi pi-microchip-ai text-lg"></i>
-        <p class="text-gray-700 text-lg">AI Model Status: </p>
-        
-        <div class="flex items-center gap-1">
-          <i class="pi text-lg" [ngClass]="statusAi() ? 'pi-check-circle text-green-600' : 'pi-times-circle text-red-600'"></i>
-          <p class="text-lg" [ngClass]="statusAi() ? 'text-green-600' : 'text-red-600'"> {{ getStatus() }}</p>
+      <div class="flex items-center justify-between gap-3">
+
+        <div class="flex items-center gap-3">
+          <i class="pi pi-microchip-ai text-lg"></i>
+          <p class="text-gray-700 text-lg">AI Model Status: </p>
+          <div class="flex items-center gap-1">
+            <i class="pi text-lg" [ngClass]="statusAi() ? 'pi-check-circle text-green-600' : 'pi-times-circle text-red-600'"></i>
+            <p class="text-lg" [ngClass]="statusAi() ? 'text-green-600' : 'text-red-600'">{{ getStatus() }}</p>
+          </div>
+
+          <div class="w-px h-6 bg-gray-300"></div>
+
+          <div class="flex items-center gap-2">
+            <p class="text-lg">Version: </p>
+            <p class="text-lg font-bold">v{{versionAi()}}</p>
+          </div>
+
+          <div class="w-px h-6 bg-gray-300"></div>
+
+          <div class="flex items-center gap-2">
+            <p class="text-lg">Last trained: </p>
+            <p class="text-lg font-bold">{{lastTrainedDateAi()}}</p>
+          </div>
         </div>
 
-        <div class="w-px h-6 bg-gray-300"></div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-green-500"></span>
+          <p class="text-green-500 text-lg">Operational</p>
+        </div>
+
       </div>
+    </p-card>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <p-card>
+      <div class="flex flex-col gap-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+          <i class="pi pi-users text-blue-500 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900">{{ totalUsers() }}</p>
+          <p class="text-gray-500 text-sm mt-0.5">Total Users</p>
+        </div>
+        <p class="text-green-500 text-sm font-medium">+{{ newUsersThisMonth() }} this month</p>
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="flex flex-col gap-3">
+        <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+          <i class="pi pi-chart-line text-green-500 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900">{{ totalPredictions() }}</p>
+          <p class="text-gray-500 text-sm mt-0.5">Total Predictions</p>
+        </div>
+        <p class="text-green-500 text-sm font-medium">+{{ newPredictionsThisMonth() }} this month</p>
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="flex flex-col gap-3">
+        <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+          <i class="pi pi-database text-purple-500 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900">{{ datasetSize() }} records</p>
+          <p class="text-gray-500 text-sm mt-0.5">Dataset Size</p>
+        </div>
+        <p class="text-green-500 text-sm font-medium">+{{ newRecordsThisMonth() }} this month</p>
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="flex flex-col gap-3">
+        <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+          <i class="pi pi-arrow-up-right text-orange-500 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gray-900">{{ modelAccuracy() }}%</p>
+          <p class="text-gray-500 text-sm mt-0.5">Model Accuracy</p>
+        </div>
+        <p class="text-green-500 text-sm font-medium">+{{ accuracyDelta() }}% vs last training</p>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <p-card class="lg:col-span-2">
+      <div class="flex flex-col gap-1 mb-4">
+        <p class="text-gray-900 font-bold text-lg">Platform Activity</p>
+        <p class="text-gray-500 text-sm">Predictions & new users per month</p>
+      </div>
+      <div style="height: 260px">
+        <p-chart type="line" [data]="platformActivityData" [options]="platformActivityOptions" height="260px" />
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="flex flex-col gap-1 mb-4">
+        <p class="text-gray-900 font-bold text-lg">Model Accuracy Trend</p>
+        <p class="text-gray-500 text-sm">Monthly accuracy %</p>
+      </div>
+      <div style="height: 260px">
+        <p-chart type="bar" [data]="modelAccuracyData" [options]="modelAccuracyOptions" height="260px" />
+      </div>
+    </p-card>
+  </div>
+
+  <div class="max-w-6xl mx-auto space-y-6 p-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-gray-900 text-xl font-bold">User Management</h1>
+        <p class="text-gray-500 text-sm mt-0.5">{{ totalUsers() }} registered users</p>
+      </div>
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white transition-colors hover:bg-blue-700"
+        (click)="onAddUser()">
+        <i class="pi pi-user-plus mr-2"></i> Add User
+      </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <p-card>
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+            <i class="pi pi-user text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <p class="text-gray-500 text-sm">Total Users</p>
+            <p class="text-gray-900 text-2xl font-bold">{{ totalUsers() }}</p>
+          </div>
+        </div>
+      </p-card>
+
+      <p-card>
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+            <i class="pi pi-shield text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <p class="text-gray-500 text-sm">Admins</p>
+            <p class="text-gray-900 text-2xl font-bold">{{ totalAdmins() }}</p>
+          </div>
+        </div>
+      </p-card>
+
+      <p-card>
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+            <i class="pi pi-user-edit text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <p class="text-gray-500 text-sm">Active</p>
+            <p class="text-gray-900 text-2xl font-bold">{{ totalActive() }}</p>
+          </div>
+        </div>
+      </p-card>
+    </div>
+
+    <p-card>
+      <div class="flex items-center gap-3 mb-6">
+        <p-iconfield class="flex-1">
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText placeholder="Search users..." class="w-full" (input)="onSearch($any($event.target).value)" />
+        </p-iconfield>
+
+        <div class="flex items-center gap-1">
+          @for (f of ['All', 'User', 'Admin']; track f) {
+            <button
+              class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              [ngClass]="activeFilter() === f
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+              (click)="onFilterChange(f)">
+              {{ f }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <p-table [value]="users()" [tableStyle]="{ 'min-width': '60rem' }">
+        <ng-template #header>
+          <tr>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">User</th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Role</th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Predictions</th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Joined</th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-user>
+          <tr>
+            <!-- User -->
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                     [ngClass]="getAvatarColor(user.id)">
+                  {{ getInitials(user.fullname) }}
+                </div>
+                <div>
+                  <p class="text-gray-900 font-medium text-sm">{{ user.fullname }}</p>
+                  <p class="text-gray-400 text-xs">{{ user.email }}</p>
+                </div>
+              </div>
+            </td>
+
+            <!-- Role -->
+            <td>
+              @if (user.role === 'admin') {
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-600">
+                <i class="pi pi-shield text-xs"></i> admin
+              </span>
+              } @else {
+                <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                user
+              </span>
+              }
+            </td>
+
+            <!-- Predictions -->
+            <td>
+              <span class="text-gray-700 text-sm">{{ user.prediction }}</span>
+            </td>
+
+            <!-- Status -->
+            <td>
+              <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full"
+                    [ngClass]="user.is_active ? 'bg-green-500' : 'bg-gray-300'"></span>
+                <span class="text-sm" [ngClass]="user.is_active ? 'text-green-600' : 'text-gray-400'">
+                {{ user.is_active ? 'active' : 'inactive' }}
+              </span>
+              </div>
+            </td>
+
+            <!-- Joined -->
+            <td>
+              <span class="text-gray-400 text-sm">{{ user.created_date }}</span>
+            </td>
+
+            <!-- Actions -->
+            <td>
+              <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+                <i class="pi pi-ellipsis-v text-gray-400"></i>
+              </button>
+            </td>
+
+          </tr>
+        </ng-template>
+      </p-table>
     </p-card>
   </div>
 </div>
