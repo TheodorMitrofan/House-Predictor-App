@@ -77,3 +77,4 @@ Stores trained models.
 | model_data     | BYTEA    | Serialized model (joblib)  |
 | rmse_score     | FLOAT    | Model performance metric   |
 | last_updated   | TIMESTAMP| Training timestamp         |
+* Data visualization and distribution plots.
