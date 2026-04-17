@@ -48,10 +48,10 @@
           <i class="pi pi-users text-blue-500 text-lg"></i>
         </div>
         <div>
-          <p class="text-2xl font-bold text-gray-900">{{ totalUsers() }}</p>
+          <p class="text-2xl font-bold text-gray-900">{{ adminStatistics()?.total_number }}</p>
           <p class="text-gray-500 text-sm mt-0.5">Total Users</p>
         </div>
-        <p class="text-green-500 text-sm font-medium">+{{ newUsersThisMonth() }} this month</p>
+        <p class="text-green-500 text-sm font-medium">+{{ adminStatistics()?.new_users_this_month }} this month</p>
       </div>
     </p-card>
 
@@ -124,7 +124,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-gray-900 text-xl font-bold">User Management</h1>
-        <p class="text-gray-500 text-sm mt-0.5">{{ totalUsers() }} registered users</p>
+        <p class="text-gray-500 text-sm mt-0.5">{{ adminStatistics()?.total_number }} registered users</p>
       </div>
       <button
         class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white transition-colors hover:bg-blue-700"
@@ -142,7 +142,7 @@
           </div>
           <div>
             <p class="text-gray-500 text-sm">Total Users</p>
-            <p class="text-gray-900 text-2xl font-bold">{{ totalUsers() }}</p>
+            <p class="text-gray-900 text-2xl font-bold">{{ adminStatistics()?.total_number }}</p>
           </div>
         </div>
       </p-card>
@@ -154,7 +154,7 @@
           </div>
           <div>
             <p class="text-gray-500 text-sm">Admins</p>
-            <p class="text-gray-900 text-2xl font-bold">{{ totalAdmins() }}</p>
+            <p class="text-gray-900 text-2xl font-bold">{{ adminStatistics()?.number_of_admins }}</p>
           </div>
         </div>
       </p-card>
@@ -166,7 +166,7 @@
           </div>
           <div>
             <p class="text-gray-500 text-sm">Active</p>
-            <p class="text-gray-900 text-2xl font-bold">{{ totalActive() }}</p>
+            <p class="text-gray-900 text-2xl font-bold">{{ adminStatistics()?.number_of_active }}</p>
           </div>
         </div>
       </p-card>
@@ -212,10 +212,10 @@
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold"
                      [ngClass]="getAvatarColor(user.id)">
-                  {{ getInitials(user.fullname) }}
+                  {{ getInitials(user.full_name) }}
                 </div>
                 <div>
-                  <p class="text-gray-900 font-medium text-sm">{{ user.fullname }}</p>
+                  <p class="text-gray-900 font-medium text-sm">{{ user.full_name }}</p>
                   <p class="text-gray-400 text-xs">{{ user.email }}</p>
                 </div>
               </div>

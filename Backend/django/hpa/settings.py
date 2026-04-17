@@ -33,18 +33,12 @@ DATABASES = {
     )
 }
 
-# REST_FRAMEWORK = {
-#     "DEFAULT_AUTHENTICATION_CLASSES": [
-#         "hpa.auth.KeycloakAuthentication",
-#     ],
-#     "DEFAULT_PERMISSION_CLASSES": [
-#         "rest_framework.permissions.IsAuthenticated",
-#     ],
-# }
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "hpa.auth.KeycloakAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
 }
 
@@ -54,6 +48,7 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # In prod, list specific origins
 KEYCLOAK_URL      = os.getenv("KEYCLOAK_URL",       "http://localhost:8080")
 KEYCLOAK_REALM    = os.getenv("KEYCLOAK_REALM",     "hpa")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "hpa-backend")
+KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
 
 # ── MinIO / S3 ────────────────────────────────────────────────────────
 MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT",   "http://localhost:9000")

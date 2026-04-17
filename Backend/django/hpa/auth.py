@@ -5,7 +5,7 @@ Django does NOT store passwords — Keycloak owns auth entirely.
 from django.conf import settings
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from keycloak import KeycloakOpenID
+from keycloak import KeycloakOpenID, KeycloakAdmin, KeycloakOpenIDConnection
 from apps.users.models import User
 
 
@@ -14,8 +14,25 @@ def _get_keycloak():
         server_url=settings.KEYCLOAK_URL + "/",
         realm_name=settings.KEYCLOAK_REALM,
         client_id=settings.KEYCLOAK_CLIENT_ID,
-        verify=False,  # set True in prod with proper cert
+        client_secret_key=settings.KEYCLOAK_CLIENT_SECRET,
+        verify=False,
     )
+
+
+def get_keycloak_openid():
+    return _get_keycloak()
+
+
+def get_keycloak_admin():
+    connection = KeycloakOpenIDConnection(
+        server_url=settings.KEYCLOAK_URL + "/",
+        realm_name=settings.KEYCLOAK_REALM,
+        client_id=settings.KEYCLOAK_CLIENT_ID,
+        client_secret_key=settings.KEYCLOAK_CLIENT_SECRET,
+        grant_type="client_credentials",
+        verify=False,
+    )
+    return KeycloakAdmin(connection=connection)
 
 
 class KeycloakAuthentication(BaseAuthentication):
@@ -35,16 +52,23 @@ class KeycloakAuthentication(BaseAuthentication):
         if not userinfo.get("active"):
             raise AuthenticationFailed("Token is inactive or expired.")
 
-        # Sync user to local DB — create on first login
+        roles = userinfo.get("realm_access", {}).get("roles", [])
+        kc_role = "admin" if "admin" in roles else "user"
+
         user, _ = User.objects.get_or_create(
-            email=userinfo["email"],
+            id=userinfo["sub"],
             defaults={
+                "email": userinfo.get("email", ""),
                 "full_name": userinfo.get("name", ""),
                 "is_active": True,
+                "role": kc_role,
             },
         )
 
-        # Attach Keycloak roles so IsAdmin permission can read them
-        request.keycloak_roles = userinfo.get("realm_access", {}).get("roles", [])
+        if user.role != kc_role:
+            user.role = kc_role
+            user.save(update_fields=["role"])
+
+        request.keycloak_roles = roles
 
         return (user, token)

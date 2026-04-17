@@ -1,7 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ILustrationPanel } from '../shared/ilustration-panel';
+import { AuthService } from '../services/auth.service';
+import { MessageService } from 'primeng/api';
+import { handleLoginError } from '../shared/utils';
 
 @Component({
   templateUrl: 'login.page.html',
@@ -12,6 +15,10 @@ import { ILustrationPanel } from '../shared/ilustration-panel';
   ],
 })
 export class LoginPage {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly messages = inject(MessageService);
+
   showPassword = signal<boolean>(false);
   loading = signal<boolean>(false);
 
@@ -24,10 +31,24 @@ export class LoginPage {
     this.showPassword.set(!this.showPassword());
   }
 
-  public handleSubmit() {
+  async handleSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
+    }
+
+    this.loading.set(true);
+
+    try {
+      await this.authService.login({
+        email: this.form.controls.email.value!,
+        password: this.form.controls.password.value!,
+      })
+      this.router.navigate(['/dashboard']);
+    } catch (error) {
+      handleLoginError(error, this.messages);
+    } finally {
+      this.loading.set(false);
     }
   }
 }

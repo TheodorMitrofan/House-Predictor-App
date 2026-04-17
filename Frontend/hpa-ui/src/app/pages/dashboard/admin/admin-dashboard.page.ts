@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { Card } from 'primeng/card';
 import { NgClass } from '@angular/common';
 import { UIChart } from 'primeng/chart';
@@ -6,19 +6,23 @@ import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { TableModule } from 'primeng/table';
 import { InputText } from 'primeng/inputtext';
-import { User } from '../../../shared/models/user';
+import { User } from '../../auth/models/user';
+import { AdminStatisticsService } from '../services/admin-statistics.service';
+import { AdminStatistics } from '../models/AdminStatistics';
+import { UserService } from '../../../shared/services/user.service';
 
 @Component({
   templateUrl: 'admin-dashboard.page.html',
   imports: [Card, NgClass, UIChart, IconField, InputIcon, TableModule, InputText],
 })
-export class AdminDashboardPage {
+export class AdminDashboardPage implements OnInit {
+
+  private readonly adminStatisticsService = inject(AdminStatisticsService);
+  private readonly userService = inject(UserService);
   //TODO update in sprint 3 with real values
   statusAi = signal<boolean>(true);
   versionAi = signal<string>('1.0.0');
   lastTrainedDateAi = signal<string>('10-04-2026');
-  totalUsers = signal<number>(67);
-  newUsersThisMonth = signal<number>(67);
   totalPredictions = signal<number>(420);
   newPredictionsThisMonth = signal<number>(69);
   datasetSize = signal<number>(20000);
@@ -27,19 +31,89 @@ export class AdminDashboardPage {
   accuracyDelta = signal<number>(0.67);
   activeFilter = signal<'All' | 'User' | 'Admin'>('All');
 
+  adminStatistics = signal<AdminStatistics | null>(null);
   users = signal<User[]>([
-    { id: 1, fullname: 'Alex Johnson',   email: 'user@example.com',    role: 'user',  prediction: 24, is_active: true,  created_date: '2024-06-15' },
-    { id: 2, fullname: 'Sarah Mitchell', email: 'admin@example.com',   role: 'admin', prediction: 57, is_active: true,  created_date: '2024-01-10' },
-    { id: 3, fullname: 'Marcus Chen',    email: 'm.chen@example.com',  role: 'user',  prediction: 12, is_active: true,  created_date: '2026-03-08' },
-    { id: 4, fullname: 'Laura Perez',    email: 'l.perez@example.com', role: 'user',  prediction: 38, is_active: true,  created_date: '2025-04-22' },
-    { id: 5, fullname: 'James Walker',   email: 'j.walker@example.com',role: 'admin', prediction: 91, is_active: true,  created_date: '2023-11-03' },
-    { id: 6, fullname: 'Emily Nguyen',   email: 'e.nguyen@example.com',role: 'user',  prediction: 5,  is_active: false, created_date: '2025-09-17' },
-    { id: 7, fullname: 'David Kim',      email: 'd.kim@example.com',   role: 'user',  prediction: 63, is_active: true,  created_date: '2024-08-30' },
-    { id: 8, fullname: 'Sophia Brown',   email: 's.brown@example.com', role: 'user',  prediction: 17, is_active: true,  created_date: '2025-02-14' },
+    {
+      id: '1',
+      full_name: 'Alex Johnson',
+      email: 'user@example.com',
+      role: 'user',
+      prediction: 24,
+      is_active: true,
+      created_date: '2024-06-15',
+    },
+    {
+      id: '2',
+      full_name: 'Sarah Mitchell',
+      email: 'admin@example.com',
+      role: 'admin',
+      prediction: 57,
+      is_active: true,
+      created_date: '2024-01-10',
+    },
+    {
+      id: '3',
+      full_name: 'Marcus Chen',
+      email: 'm.chen@example.com',
+      role: 'user',
+      prediction: 12,
+      is_active: true,
+      created_date: '2026-03-08',
+    },
+    {
+      id: '4',
+      full_name: 'Laura Perez',
+      email: 'l.perez@example.com',
+      role: 'user',
+      prediction: 38,
+      is_active: true,
+      created_date: '2025-04-22',
+    },
+    {
+      id: '5',
+      full_name: 'James Walker',
+      email: 'j.walker@example.com',
+      role: 'admin',
+      prediction: 91,
+      is_active: true,
+      created_date: '2023-11-03',
+    },
+    {
+      id: '6',
+      full_name: 'Emily Nguyen',
+      email: 'e.nguyen@example.com',
+      role: 'user',
+      prediction: 5,
+      is_active: false,
+      created_date: '2025-09-17',
+    },
+    {
+      id: '7',
+      full_name: 'David Kim',
+      email: 'd.kim@example.com',
+      role: 'user',
+      prediction: 63,
+      is_active: true,
+      created_date: '2024-08-30',
+    },
+    {
+      id: '8',
+      full_name: 'Sophia Brown',
+      email: 's.brown@example.com',
+      role: 'user',
+      prediction: 17,
+      is_active: true,
+      created_date: '2025-02-14',
+    },
   ]);
 
-  totalAdmins = computed(() => this.users().filter(u => u.role === 'admin').length);
-  totalActive = computed(() => this.users().filter(u => u.is_active).length);
+  async ngOnInit(): Promise<void> {
+    const data = await this.adminStatisticsService.getStatistics();
+    this.adminStatistics.set(data);
+
+    const data_users = await this.userService.getUsers();
+    console.log(data_users);
+  }
 
   platformActivityData = {
     labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
@@ -132,12 +206,25 @@ export class AdminDashboardPage {
   }
 
   getInitials(fullname: string): string {
-    return fullname.split(' ').map(n => n[0]).join('').toUpperCase();
+    return fullname
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
   }
 
-  getAvatarColor(id: number): string {
-    const colors = ['bg-blue-500', 'bg-purple-500', 'bg-blue-600', 'bg-green-500', 'bg-purple-600', 'bg-pink-500', 'bg-orange-500', 'bg-teal-500'];
-    return colors[id % colors.length];
+  getAvatarColor(id: string): string {
+    const colors = [
+      'bg-blue-500',
+      'bg-purple-500',
+      'bg-blue-600',
+      'bg-green-500',
+      'bg-purple-600',
+      'bg-pink-500',
+      'bg-orange-500',
+      'bg-teal-500',
+    ];
+    return colors[id.charCodeAt(0) % colors.length];
   }
 
   onAddUser(): void {

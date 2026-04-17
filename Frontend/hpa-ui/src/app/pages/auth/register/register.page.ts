@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ILustrationPanel } from '../shared/ilustration-panel';
 import {
   AbstractControl,
@@ -7,15 +7,22 @@ import {
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
-  Validators
+  Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { MessageService } from 'primeng/api';
+import { handleRegisterError } from '../shared/utils';
 
 @Component({
   templateUrl: 'register.page.html',
   imports: [ILustrationPanel, ReactiveFormsModule, RouterLink],
 })
 export class RegisterPage {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly messages = inject(MessageService);
+
   showPassword = signal<boolean>(false);
   showConfirmedPassword = signal<boolean>(false);
   loading = signal<boolean>(false);
@@ -38,10 +45,25 @@ export class RegisterPage {
     this.showConfirmedPassword.set(!this.showConfirmedPassword());
   }
 
-  public handleSubmit() {
+  async handleSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
+    }
+
+    this.loading.set(true);
+
+    try {
+      await this.authService.register({
+        full_name: this.form.controls.fullName.value!,
+        email: this.form.controls.email.value!,
+        password: this.form.controls.password.value!,
+      });
+      this.router.navigate(['/dashboard']);
+    } catch (error) {
+      handleRegisterError(error, this.form.controls.email, this.messages);
+    } finally {
+      this.loading.set(false);
     }
   }
 
