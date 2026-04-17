@@ -37,7 +37,11 @@
           class="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
         />
         @if (form.controls.email.invalid && form.controls.email.touched) {
-          <p class="text-xs text-red-600 mt-1">Invalid email address</p>
+          @if (form.controls.email.errors?.['duplicate']) {
+            <p class="text-xs text-red-600 mt-1">Email already registered</p>
+          } @else {
+            <p class="text-xs text-red-600 mt-1">Invalid email address</p>
+          }
         }
       </div>
       <div>

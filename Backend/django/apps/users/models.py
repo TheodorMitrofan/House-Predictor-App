@@ -44,10 +44,19 @@ class User(models.Model):
     is_active = models.BooleanField(default=True, db_column="isActive")
     location = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_column="createdAt")
+    role = models.TextField(max_length=50)
+    created_date = models.DateTimeField(auto_now_add=True, db_column="createdDate")
 
     class Meta:
         db_table = "user"
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
 
     def __str__(self):
         return self.email
