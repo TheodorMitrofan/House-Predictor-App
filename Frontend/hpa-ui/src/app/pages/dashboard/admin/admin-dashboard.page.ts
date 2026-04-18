@@ -32,80 +32,7 @@ export class AdminDashboardPage implements OnInit {
   activeFilter = signal<'All' | 'User' | 'Admin'>('All');
 
   adminStatistics = signal<AdminStatistics | null>(null);
-  users = signal<User[]>([
-    {
-      id: '1',
-      full_name: 'Alex Johnson',
-      email: 'user@example.com',
-      role: 'user',
-      prediction: 24,
-      is_active: true,
-      created_date: '2024-06-15',
-    },
-    {
-      id: '2',
-      full_name: 'Sarah Mitchell',
-      email: 'admin@example.com',
-      role: 'admin',
-      prediction: 57,
-      is_active: true,
-      created_date: '2024-01-10',
-    },
-    {
-      id: '3',
-      full_name: 'Marcus Chen',
-      email: 'm.chen@example.com',
-      role: 'user',
-      prediction: 12,
-      is_active: true,
-      created_date: '2026-03-08',
-    },
-    {
-      id: '4',
-      full_name: 'Laura Perez',
-      email: 'l.perez@example.com',
-      role: 'user',
-      prediction: 38,
-      is_active: true,
-      created_date: '2025-04-22',
-    },
-    {
-      id: '5',
-      full_name: 'James Walker',
-      email: 'j.walker@example.com',
-      role: 'admin',
-      prediction: 91,
-      is_active: true,
-      created_date: '2023-11-03',
-    },
-    {
-      id: '6',
-      full_name: 'Emily Nguyen',
-      email: 'e.nguyen@example.com',
-      role: 'user',
-      prediction: 5,
-      is_active: false,
-      created_date: '2025-09-17',
-    },
-    {
-      id: '7',
-      full_name: 'David Kim',
-      email: 'd.kim@example.com',
-      role: 'user',
-      prediction: 63,
-      is_active: true,
-      created_date: '2024-08-30',
-    },
-    {
-      id: '8',
-      full_name: 'Sophia Brown',
-      email: 's.brown@example.com',
-      role: 'user',
-      prediction: 17,
-      is_active: true,
-      created_date: '2025-02-14',
-    },
-  ]);
+  users = signal<User[]>([]);
 
   async ngOnInit(): Promise<void> {
     const data = await this.adminStatisticsService.getStatistics();
@@ -113,6 +40,7 @@ export class AdminDashboardPage implements OnInit {
 
     const data_users = await this.userService.getUsers();
     console.log(data_users);
+    this.users.set(data_users.map(u => ({ ...u, prediction: 0 })));
   }
 
   platformActivityData = {

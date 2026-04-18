@@ -3,6 +3,7 @@ import { LoginPage } from './app/pages/auth/login/login.page';
 import { RegisterPage } from './app/pages/auth/register/register.page';
 import { AppLayoutComponent } from './app/layout/sidebar/app-layout.component';
 import { AdminDashboardPage } from './app/pages/dashboard/admin/admin-dashboard.page';
+import { UserDashboardPage } from './app/pages/dashboard/user/user-dashboard.page';
 import { authGuard } from './app/shared/guards/auth.guard';
 
 export const routes: Routes = [
@@ -13,7 +14,8 @@ export const routes: Routes = [
     component: AppLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: "", component: AdminDashboardPage },
+      { path: "admin", component: AdminDashboardPage },
+      { path: "user", component: UserDashboardPage },
     ],
   },
 ];

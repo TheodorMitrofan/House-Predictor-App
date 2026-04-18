@@ -44,7 +44,8 @@ export class LoginPage {
         email: this.form.controls.email.value!,
         password: this.form.controls.password.value!,
       })
-      this.router.navigate(['/dashboard']);
+      const role = this.authService.getRoleFromToken();
+      this.router.navigate([role === 'admin' ? '/dashboard/admin' : '/dashboard/user']);
     } catch (error) {
       handleLoginError(error, this.messages);
     } finally {
