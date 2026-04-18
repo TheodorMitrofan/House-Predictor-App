@@ -11,7 +11,6 @@ import { User } from '../models/user';
 
 const TOKEN_KEY = 'hpa.access_token';
 const REFRESH_KEY = 'hpa.refresh_token';
-const USER_KEY = 'hpa.user';
 
 @Injectable({providedIn: "root"})
 export class AuthService {
@@ -22,7 +21,7 @@ export class AuthService {
   async register(payload: RegisterPayload): Promise<AuthResponse> {
     const res = await firstValueFrom(this.http.post<AuthResponse>(`${this.baseUrl}/register/`, payload));
 
-    this.persistAuth(res);
+    this.persistTokens(res);
     return res;
   }
 
@@ -30,7 +29,7 @@ export class AuthService {
     const res = await firstValueFrom(
       this.http.post<AuthResponse>(`${this.baseUrl}/login/`, payload),
     );
-    this.persistAuth(res);
+    this.persistTokens(res);
     return res;
   }
 
@@ -49,7 +48,6 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(USER_KEY);
     this.router.navigate(['/']);
   }
 
@@ -61,18 +59,22 @@ export class AuthService {
     return localStorage.getItem(REFRESH_KEY);
   }
 
-  getUser(): User | null {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? (JSON.parse(raw) as User) : null;
-  }
-
   isAuthenticated(): boolean {
     return !!this.getAccessToken();
   }
 
-  private persistAuth(res: AuthResponse): void {
-    this.persistTokens(res);
-    localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+  getRoleFromToken(): 'admin' | 'user' | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+    try {
+      const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = part + '='.repeat((4 - part.length % 4) % 4);
+      const payload = JSON.parse(atob(padded));
+      const roles: string[] = payload.realm_access?.roles ?? [];
+      return roles.includes('admin') ? 'admin' : 'user';
+    } catch {
+      return null;
+    }
   }
 
   private persistTokens(res: RefreshResponse): void {

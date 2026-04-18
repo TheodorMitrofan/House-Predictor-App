@@ -1,5 +1,5 @@
 import { SidebarFooterComponent } from './components/sidebar-footer.component';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarProviderComponent } from './components/sidebar-provider.component';
@@ -13,6 +13,7 @@ import { SidebarInsetComponent } from './components/sidebar-inset.component';
 import { SidebarGroupLabelComponent } from './components/sidebar-group-label.component';
 import { AuthService } from '../../pages/auth/services/auth.service';
 import { User } from '../../pages/auth/models/user';
+import { UserService } from '../../shared/services/user.service';
 
 @Component({
   selector: "app-layout",
@@ -79,8 +80,8 @@ import { User } from '../../pages/auth/models/user';
               {{ computeInitials() }}
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-gray-900 truncate">{{ currentUser().full_name }}</div>
-              <div class="text-xs text-gray-500 truncate">{{ currentUser().email }}</div>
+              <div class="text-sm font-medium text-gray-900 truncate">{{ currentUser()!.full_name }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ currentUser()!.email }}</div>
             </div>
           </div>
           <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
@@ -98,11 +99,17 @@ import { User } from '../../pages/auth/models/user';
     </app-sidebar-provider>
   `,
 })
-export class AppLayoutComponent {
-  //TO DO: add user pfp
-  private readonly authService = inject(AuthService);
+export class AppLayoutComponent implements OnInit {
+  private readonly authService = inject(AuthService)
+  private readonly userService = inject(UserService)
 
-  currentUser = signal<User>(this.authService.getUser()!);
+  currentUser = signal<User | null>(null);
+
+  async ngOnInit() {
+    const data = await this.userService.getUser();
+
+    this.currentUser.set(data);
+  }
 
   public computeInitials(): string {
     return (this.currentUser()?.full_name ?? '')

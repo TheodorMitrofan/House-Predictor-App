@@ -59,7 +59,7 @@ export class RegisterPage {
         email: this.form.controls.email.value!,
         password: this.form.controls.password.value!,
       });
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/dashboard/user']);
     } catch (error) {
       handleRegisterError(error, this.form.controls.email, this.messages);
     } finally {

@@ -14,4 +14,8 @@ export class UserService {
     return firstValueFrom(this.http.get<User[]>(this.baseUrl));
   }
 
+  async getUser(): Promise<User> {
+    return firstValueFrom(this.http.get<User>(`${this.baseUrl}/me`));
+  }
+
 }
