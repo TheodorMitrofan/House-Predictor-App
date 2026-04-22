@@ -14,7 +14,7 @@ DB_HOST = "localhost"
 DB_PORT = "5432"
 
 CSV_PATH = r"..\house_prices.csv"
-TABLE_NAME = "house_prices"
+TABLE_NAME = "training_data"
 
 def main():
     # Read CSV
