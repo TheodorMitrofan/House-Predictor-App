@@ -7,7 +7,7 @@ import { AuthResponse } from '../models/AuthResponse';
 import { firstValueFrom } from 'rxjs';
 import { LoginPayload } from '../models/LoginPayload';
 import { RefreshResponse } from '../models/RefreshResponse';
-import { User } from '../models/user';
+import { User } from '../models/User';
 
 const TOKEN_KEY = 'hpa.access_token';
 const REFRESH_KEY = 'hpa.refresh_token';

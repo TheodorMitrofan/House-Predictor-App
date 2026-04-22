@@ -1,5 +1,5 @@
 import { SidebarFooterComponent } from './components/sidebar-footer.component';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarProviderComponent } from './components/sidebar-provider.component';
@@ -12,7 +12,6 @@ import { SidebarMenuItemComponent } from './components/sidebar-menu-item.compone
 import { SidebarInsetComponent } from './components/sidebar-inset.component';
 import { SidebarGroupLabelComponent } from './components/sidebar-group-label.component';
 import { AuthService } from '../../pages/auth/services/auth.service';
-import { User } from '../../pages/auth/models/user';
 import { UserService } from '../../shared/services/user.service';
 
 @Component({
@@ -53,9 +52,8 @@ import { UserService } from '../../shared/services/user.service';
             <app-sidebar-group-label>User Panel</app-sidebar-group-label>
             <app-sidebar-menu>
 
-              <app-sidebar-menu-item label="Dashboard" route="/dashboard" [isActive]="true">
+              <app-sidebar-menu-item label="Dashboard" [route]="dashboardRoute()">
                 <i icon class="pi pi-th-large"></i>
-                <i suffix class="pi pi-chevron-right text-xs text-blue-400"></i>
               </app-sidebar-menu-item>
 
               <app-sidebar-menu-item label="New Prediction" route="/predict">
@@ -66,7 +64,7 @@ import { UserService } from '../../shared/services/user.service';
                 <i icon class="pi pi-history"></i>
               </app-sidebar-menu-item>
 
-              <app-sidebar-menu-item label="Profile" route="/profile">
+              <app-sidebar-menu-item label="Profile" route="/dashboard/profile">
                 <i icon class="pi pi-user"></i>
               </app-sidebar-menu-item>
 
@@ -103,12 +101,16 @@ export class AppLayoutComponent implements OnInit {
   private readonly authService = inject(AuthService)
   private readonly userService = inject(UserService)
 
-  currentUser = signal<User | null>(null);
+  currentUser = this.userService.currentUser;
+
+  dashboardRoute = computed(() =>
+    this.currentUser()?.role === 'admin' ? '/dashboard/admin' : '/dashboard/user'
+  );
 
   async ngOnInit() {
-    const data = await this.userService.getUser();
-
-    this.currentUser.set(data);
+    if (!this.currentUser()) {
+      await this.userService.load();
+    }
   }
 
   public computeInitials(): string {
