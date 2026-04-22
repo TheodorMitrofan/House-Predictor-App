@@ -6,7 +6,7 @@ import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { TableModule } from 'primeng/table';
 import { InputText } from 'primeng/inputtext';
-import { User } from '../../auth/models/user';
+import { User } from '../../auth/models/User';
 import { AdminStatisticsService } from '../services/admin-statistics.service';
 import { AdminStatistics } from '../models/AdminStatistics';
 import { UserService } from '../../../shared/services/user.service';
