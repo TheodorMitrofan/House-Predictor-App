@@ -1,0 +1,214 @@
+<div class="max-w-6xl mx-auto space-y-5">
+  <!-- Header -->
+  <div class="flex items-center justify-between mt-8">
+    <div>
+      <h1 class="text-gray-900 text-xl font-bold">Data Management</h1>
+      <p class="text-gray-500 text-lg mt-0.5">Manage the housing dataset used for AI model training</p>
+    </div>
+    <button
+      (click)="openAddModal()"
+      class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+    >
+      <i class="pi pi-plus text-sm"></i>
+      Add Entry
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <p-table
+      [value]="data()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalCount()"
+      [first]="first()"
+      [loading]="loading()"
+      (onLazyLoad)="onLazyLoad($event)"
+      [tableStyle]="{ 'min-width': '60rem' }"
+    >
+      <ng-template #header>
+        <tr class="bg-gray-50">
+          @for (h of headers; track h) {
+            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{{ h }}</th>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-entry>
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-5 py-3.5 text-sm font-medium text-gray-900 whitespace-nowrap">{{ entry.zipcode }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.bedrooms }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.bathrooms }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.sqft_living }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.floors }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.yr_built }}</td>
+          <td class="px-5 py-3.5">
+            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">{{ entry.grade }}</span>
+          </td>
+          <td class="px-5 py-3.5 text-sm font-semibold text-gray-900">{{ formatPrice(entry.price) }}</td>
+          <td class="px-5 py-3.5">
+            <div class="flex items-center gap-2">
+              <button
+                (click)="openEditModal(entry)"
+                class="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                <i class="pi pi-pencil text-xs"></i>
+              </button>
+              @if (deleteConfirm() === entry.id) {
+                <div class="flex items-center gap-1">
+                  <button
+                    (click)="confirmDelete(entry.id)"
+                    class="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    (click)="cancelDelete()"
+                    class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              } @else {
+                <button
+                  (click)="askDelete(entry.id)"
+                  class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <i class="pi pi-trash text-xs"></i>
+                </button>
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td [attr.colspan]="headers.length" class="px-5 py-10 text-center text-gray-400 text-sm">
+            No entries available.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  @if (showModal()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 class="text-gray-900 font-semibold">{{ editEntry() ? 'Edit Entry' : 'Add New Entry' }}</h3>
+          <button (click)="closeModal()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <i class="pi pi-times text-sm text-gray-500"></i>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">Zipcode</label>
+            <input
+              type="number"
+              [value]="form().zipcode"
+              (input)="setField('zipcode', $event)"
+              placeholder="e.g. 98178"
+              class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Bedrooms</label>
+              <input
+                type="number"
+                min="0"
+                max="15"
+                [value]="form().bedrooms"
+                (input)="setField('bedrooms', $event)"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Bathrooms</label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                [value]="form().bathrooms"
+                (input)="setField('bathrooms', $event)"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Sqft Living</label>
+              <input
+                type="number"
+                min="0"
+                [value]="form().sqft_living"
+                (input)="setField('sqft_living', $event)"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Floors</label>
+              <input
+                type="number"
+                min="1"
+                max="4"
+                step="0.5"
+                [value]="form().floors"
+                (input)="setField('floors', $event)"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Year Built</label>
+              <input
+                type="number"
+                min="1900"
+                max="2026"
+                [value]="form().yr_built"
+                (input)="setField('yr_built', $event)"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Grade (1-13)</label>
+              <input
+                type="number"
+                min="1"
+                max="13"
+                [value]="form().grade"
+                (input)="setField('grade', $event)"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">Sale Price ($)</label>
+            <input
+              type="number"
+              min="0"
+              [value]="form().price"
+              (input)="setField('price', $event)"
+              class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button
+              (click)="closeModal()"
+              class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              (click)="save()"
+              [disabled]="!form().zipcode || !form().sqft_living || saving()"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <i class="pi pi-save text-sm"></i>
+              {{ editEntry() ? 'Update Entry' : 'Add Entry' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

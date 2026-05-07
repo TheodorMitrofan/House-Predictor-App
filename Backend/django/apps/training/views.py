@@ -63,10 +63,31 @@ class TrainingDataListView(APIView):
 
     def get(self, request):
         search = request.query_params.get("search", "")
-        entries = TrainingData.objects.all()
+        try:
+            page = max(int(request.query_params.get("page", 1)), 1)
+        except (TypeError, ValueError):
+            page = 1
+        try:
+            page_size = max(int(request.query_params.get("page_size", 20)), 1)
+        except (TypeError, ValueError):
+            page_size = 20
+
+        qs = TrainingData.objects.all().order_by("id")
         if search:
-            entries = entries.filter(zipcode__icontains=search)
-        return Response(TrainingDataSerializer(entries[:200], many=True).data)
+            qs = qs.filter(zipcode__icontains=search)
+
+        total = qs.count()
+        total_pages = (total + page_size - 1) // page_size if total else 1
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        return Response({
+            "count": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "results": TrainingDataSerializer(qs[start:end], many=True).data,
+        })
 
     def post(self, request):
         serializer = TrainingDataWriteSerializer(data=request.data)
@@ -77,13 +98,29 @@ class TrainingDataListView(APIView):
 
 
 class TrainingDataDetailView(APIView):
-    """DELETE /api/training/data/<id>/"""
+    """PATCH/DELETE /api/training/data/<id>/"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
-    def delete(self, request, entry_id):
+    def _get_entry(self, entry_id):
         try:
-            entry = TrainingData.objects.get(id=entry_id)
+            return TrainingData.objects.get(id=entry_id)
         except TrainingData.DoesNotExist:
+            return None
+
+    def patch(self, request, entry_id):
+        entry = self._get_entry(entry_id)
+        if not entry:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TrainingDataWriteSerializer(entry, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(TrainingDataSerializer(entry).data)
+
+    def delete(self, request, entry_id):
+        entry = self._get_entry(entry_id)
+        if not entry:
             return Response(status=status.HTTP_404_NOT_FOUND)
         entry.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

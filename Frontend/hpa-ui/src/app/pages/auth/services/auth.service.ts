@@ -7,7 +7,7 @@ import { AuthResponse } from '../models/AuthResponse';
 import { firstValueFrom } from 'rxjs';
 import { LoginPayload } from '../models/LoginPayload';
 import { RefreshResponse } from '../models/RefreshResponse';
-import { User } from '../models/User';
+import { UserService } from '../../../shared/services/user.service';
 
 const TOKEN_KEY = 'hpa.access_token';
 const REFRESH_KEY = 'hpa.refresh_token';
@@ -16,6 +16,7 @@ const REFRESH_KEY = 'hpa.refresh_token';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly userService = inject(UserService);
   private readonly baseUrl = `${environment.baseApiUrl}/users/auth`;
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {
@@ -48,6 +49,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    this.userService.currentUser.set(null);
     this.router.navigate(['/']);
   }
 

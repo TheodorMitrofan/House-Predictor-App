@@ -13,7 +13,7 @@ DB_PASSWORD = "hpa"
 DB_HOST = "localhost"
 DB_PORT = "5432"
 
-CSV_PATH = r"..\house_prices.csv"
+CSV_PATH = r"../house_prices.csv"
 TABLE_NAME = "training_data"
 
 def main():

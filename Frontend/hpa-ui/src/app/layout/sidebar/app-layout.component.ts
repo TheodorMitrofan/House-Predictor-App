@@ -49,20 +49,26 @@ import { UserService } from '../../shared/services/user.service';
 
         <app-sidebar-content>
           <app-sidebar-group>
-            <app-sidebar-group-label>User Panel</app-sidebar-group-label>
+            <app-sidebar-group-label>{{ isAdmin() ? 'Admin Panel' : 'User Panel' }}</app-sidebar-group-label>
             <app-sidebar-menu>
 
               <app-sidebar-menu-item label="Dashboard" [route]="dashboardRoute()">
                 <i icon class="pi pi-th-large"></i>
               </app-sidebar-menu-item>
 
-              <app-sidebar-menu-item label="New Prediction" route="/predict">
-                <i icon class="pi pi-plus-circle"></i>
-              </app-sidebar-menu-item>
+              @if (isAdmin()) {
+                <app-sidebar-menu-item label="Data Management" route="/dashboard/data-management">
+                  <i icon class="pi pi-database"></i>
+                </app-sidebar-menu-item>
+              } @else {
+                <app-sidebar-menu-item label="New Prediction" route="/predict">
+                  <i icon class="pi pi-plus-circle"></i>
+                </app-sidebar-menu-item>
 
-              <app-sidebar-menu-item label="History" route="/history">
-                <i icon class="pi pi-history"></i>
-              </app-sidebar-menu-item>
+                <app-sidebar-menu-item label="History" route="/history">
+                  <i icon class="pi pi-history"></i>
+                </app-sidebar-menu-item>
+              }
 
               <app-sidebar-menu-item label="Profile" route="/dashboard/profile">
                 <i icon class="pi pi-user"></i>
@@ -103,8 +109,10 @@ export class AppLayoutComponent implements OnInit {
 
   currentUser = this.userService.currentUser;
 
+  isAdmin = computed(() => this.currentUser()?.role === 'admin');
+
   dashboardRoute = computed(() =>
-    this.currentUser()?.role === 'admin' ? '/dashboard/admin' : '/dashboard/user'
+    this.isAdmin() ? '/dashboard/admin' : '/dashboard/user'
   );
 
   async ngOnInit() {
