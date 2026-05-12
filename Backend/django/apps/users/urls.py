@@ -3,6 +3,7 @@ from .views import (
     MeView,
     UserListView,
     UserDetailView,
+    AdminCreateUserView,
     AuthRegisterView,
     AuthLoginView,
     AuthRefreshView,
@@ -12,6 +13,7 @@ from .views import (
 urlpatterns = [
     path("me/",              MeView.as_view()),
     path("",                 UserListView.as_view()),
+    path("create/",          AdminCreateUserView.as_view()),
     path("<uuid:user_id>/",  UserDetailView.as_view()),
     path("auth/register/",   AuthRegisterView.as_view()),
     path("auth/login/",      AuthLoginView.as_view()),

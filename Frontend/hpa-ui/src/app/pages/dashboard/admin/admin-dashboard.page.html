@@ -20,7 +20,7 @@
 
           <div class="flex items-center gap-2">
             <p class="text-lg">Version: </p>
-            <p class="text-lg font-bold">v{{versionAi()}}</p>
+            <p class="text-lg font-bold">{{ versionAi() }}</p>
           </div>
 
           <div class="w-px h-6 bg-gray-300"></div>
@@ -32,8 +32,8 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-green-500"></span>
-          <p class="text-green-500 text-lg">Operational</p>
+          <span class="w-2 h-2 rounded-full" [ngClass]="statusAi() ? 'bg-green-500' : 'bg-red-500'"></span>
+          <p class="text-lg" [ngClass]="statusAi() ? 'text-green-500' : 'text-red-500'">{{ statusAi() ? 'Operational' : 'Offline' }}</p>
         </div>
 
       </div>
@@ -77,7 +77,6 @@
           <p class="text-2xl font-bold text-gray-900">{{ datasetSize() }} records</p>
           <p class="text-gray-500 text-sm mt-0.5">Dataset Size</p>
         </div>
-        <p class="text-green-500 text-sm font-medium">+{{ newRecordsThisMonth() }} this month</p>
       </div>
     </p-card>
 
@@ -90,7 +89,6 @@
           <p class="text-2xl font-bold text-gray-900">{{ modelAccuracy() }}%</p>
           <p class="text-gray-500 text-sm mt-0.5">Model Accuracy</p>
         </div>
-        <p class="text-green-500 text-sm font-medium">+{{ accuracyDelta() }}% vs last training</p>
       </div>
     </p-card>
   </div>
@@ -198,7 +196,6 @@
           <tr>
             <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">User</th>
             <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Role</th>
-            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Predictions</th>
             <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
             <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Joined</th>
             <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
@@ -234,11 +231,6 @@
               }
             </td>
 
-            <!-- Predictions -->
-            <td>
-              <span class="text-gray-700 text-sm">{{ user.prediction }}</span>
-            </td>
-
             <!-- Status -->
             <td>
               <div class="flex items-center gap-1.5">
@@ -257,9 +249,37 @@
 
             <!-- Actions -->
             <td>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
-                <i class="pi pi-ellipsis-v text-gray-400"></i>
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  (click)="onEditUser(user)"
+                  class="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                >
+                  <i class="pi pi-pencil text-xs"></i>
+                </button>
+                @if (deleteConfirmId() === user.id) {
+                  <div class="flex items-center gap-1">
+                    <button
+                      (click)="confirmDelete(user.id)"
+                      class="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      (click)="cancelDelete()"
+                      class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    (click)="askDelete(user.id)"
+                    class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                }
+              </div>
             </td>
 
           </tr>
@@ -267,4 +287,125 @@
       </p-table>
     </p-card>
   </div>
+
+  <!-- Add / Edit User Modal -->
+  @if (showModal()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 class="text-gray-900 font-semibold">{{ editingUser() ? 'Edit User' : 'Add New User' }}</h3>
+          <button (click)="closeModal()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <i class="pi pi-times text-sm text-gray-500"></i>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <!-- Full Name -->
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">Full Name</label>
+            <input
+              type="text"
+              [value]="form().full_name"
+              (input)="setField('full_name', $event)"
+              placeholder="e.g. John Doe"
+              class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
+            <input
+              type="email"
+              [value]="form().email"
+              (input)="setField('email', $event)"
+              placeholder="e.g. john@example.com"
+              [disabled]="!!editingUser()"
+              class="w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              [ngClass]="editingUser() ? 'border-gray-100 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-gray-200 text-gray-900'"
+            />
+            @if (editingUser()) {
+              <p class="text-xs text-gray-400 mt-1">Email cannot be changed.</p>
+            }
+          </div>
+
+          <!-- Password (add only) -->
+          @if (!editingUser()) {
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Password</label>
+              <input
+                type="password"
+                [value]="form().password"
+                (input)="setField('password', $event)"
+                placeholder="Min. 6 characters"
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Role -->
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Role</label>
+              <div class="flex items-center gap-1">
+                <button
+                  (click)="setRole('user')"
+                  class="flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                  [ngClass]="form().role === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+                >
+                  User
+                </button>
+                <button
+                  (click)="setRole('admin')"
+                  class="flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                  [ngClass]="form().role === 'admin'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+                >
+                  Admin
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Toggle (edit only) -->
+            @if (editingUser()) {
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1.5">Status</label>
+                <label class="flex items-center gap-3 px-3 py-2.5 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    [checked]="form().is_active"
+                    (change)="setField('is_active', $event)"
+                    class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span class="text-sm" [ngClass]="form().is_active ? 'text-green-600 font-medium' : 'text-gray-400'">
+                    {{ form().is_active ? 'Active' : 'Inactive' }}
+                  </span>
+                </label>
+              </div>
+            }
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2 pt-2">
+            <button
+              (click)="closeModal()"
+              class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              (click)="saveUser()"
+              [disabled]="!form().full_name || (!editingUser() && (!form().email || form().password.length < 6)) || saving()"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <i class="pi pi-save text-sm"></i>
+              {{ editingUser() ? 'Update User' : 'Create User' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 </div>

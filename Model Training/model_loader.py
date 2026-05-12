@@ -47,7 +47,7 @@ def load_active_model():
 
     row = _get_active_row()
     if not row:
-        print("⚠️  No active model in DB — waiting for first retrain.")
+        print("No active model in DB — waiting for first retrain.")
         return
 
     model_path, version, accuracy, dataset_size = row

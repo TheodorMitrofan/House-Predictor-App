@@ -9,6 +9,8 @@ from .models import User
 from .serializers import (
       UserSerializer,
       UserUpdateSerializer,
+      AdminUserCreateSerializer,
+      AdminUserUpdateSerializer,
       RegisterSerializer,
       LoginSerializer,
       RefreshSerializer,
@@ -37,17 +39,20 @@ class MeView(APIView):
 
 
 class UserListView(APIView):
-    """GET /api/users/  — admin: list + search users"""
+    """GET /api/users/  — admin: list + search + filter users"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
         search = request.query_params.get("search", "")
+        role = request.query_params.get("role", "")
         users = User.objects.all()
         if search:
             users = (
                 users.filter(email__icontains=search)
                 | users.filter(full_name__icontains=search)
             )
+        if role and role.lower() in ("admin", "user"):
+            users = users.filter(role=role.lower())
         return Response(UserSerializer(users, many=True).data)
 
 
@@ -73,9 +78,12 @@ class UserDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if "is_active" in request.data:
-            user.is_active = request.data["is_active"]
-            user.save()
+        serializer = AdminUserUpdateSerializer(
+            user, data=request.data, partial=True
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
 
         return Response(UserSerializer(user).data)
 
@@ -83,8 +91,104 @@ class UserDetailView(APIView):
         user = self._get_user(user_id)
         if not user:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # Prevent admin from deleting themselves
+        if str(user.id) == str(request.user.id):
+            return Response(
+                {"error": "Nu puteți șterge propriul cont de administrator."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Delete from Keycloak
+        try:
+            admin = get_keycloak_admin()
+            admin.delete_user(str(user.id))
+        except Exception:
+            pass  # User may not exist in Keycloak
+
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminCreateUserView(APIView):
+    """POST /api/users/create/  — admin creates a new user"""
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        serializer = AdminUserCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        full_name = serializer.validated_data["full_name"]
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
+        role = serializer.validated_data.get("role", "user")
+
+        name_parts = full_name.split(" ", 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else "-"
+
+        admin = get_keycloak_admin()
+        try:
+            kc_user_id = admin.create_user(
+                {
+                    "email": email,
+                    "username": email,
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "enabled": True,
+                    "emailVerified": True,
+                    "credentials": [{
+                        "type": "password",
+                        "value": password,
+                        "temporary": False,
+                    }],
+                },
+                exist_ok=False,
+            )
+        except KeycloakPostError as e:
+            if getattr(e, "response_code", None) == 409:
+                return Response(
+                    {"email": "Email already registered"},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # Assign realm role in Keycloak if admin
+        if role == "admin":
+            try:
+                realm_roles = admin.get_realm_roles()
+                admin_role = next(
+                    (r for r in realm_roles if r["name"] == "admin"), None
+                )
+                if admin_role:
+                    admin.assign_realm_roles(
+                        user_id=kc_user_id,
+                        roles=[admin_role],
+                    )
+            except Exception:
+                pass  # Role assignment is best-effort
+
+        try:
+            user = User.objects.create(
+                id=kc_user_id,
+                email=email,
+                full_name=full_name,
+                role=role,
+                is_active=True,
+            )
+        except Exception:
+            admin.delete_user(kc_user_id)
+            raise
+
+        return Response(
+            UserSerializer(user).data,
+            status=status.HTTP_201_CREATED,
+        )
+
 
 class AuthRegisterView(APIView):
     """POST /api/users/auth/register/"""
@@ -100,13 +204,18 @@ class AuthRegisterView(APIView):
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
 
+        name_parts = full_name.split(" ", 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else "-"
+
         admin = get_keycloak_admin()
         try:
             kc_user_id = admin.create_user(
                 {
                     "email": email,
                     "username": email,
-                    "firstName": full_name,
+                    "firstName": first_name,
+                    "lastName": last_name,
                     "enabled": True,
                     "emailVerified": True,
                       "credentials": [{
@@ -228,9 +337,16 @@ class UsersStatisticsView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
+        from apps.predictions.models import Prediction
+        from apps.training.models import TrainingData, RunHistory
+
         start_of_month = timezone.now().replace(
             day=1, hour=0, minute=0, second=0, microsecond=0
         )
+
+        # Active model info
+        active_model = RunHistory.objects.filter(is_active=True).first()
+
         stats = {
             "total_number": User.objects.count(),
             "number_of_admins": User.objects.filter(role="admin").count(),
@@ -238,5 +354,14 @@ class UsersStatisticsView(APIView):
             "new_users_this_month": User.objects.filter(
                 created_date__gte=start_of_month
             ).count(),
+            "total_predictions": Prediction.objects.count(),
+            "new_predictions_this_month": Prediction.objects.filter(
+                created_at__gte=start_of_month
+            ).count(),
+            "dataset_size": TrainingData.objects.count(),
+            "model_accuracy": active_model.accuracy if active_model else None,
+            "model_version": active_model.version if active_model else None,
+            "last_trained_date": active_model.date if active_model else None,
         }
         return Response(TotalUsersSerializer(stats).data)
+
