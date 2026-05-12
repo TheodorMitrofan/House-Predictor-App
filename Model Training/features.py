@@ -5,39 +5,93 @@ Column order must match FEATURE_NAMES in model_loader.py and FEATURE_COLS in tra
 import numpy as np
 from datetime import datetime
 
-PROPERTY_TYPE_MAP = {"Apartment": 0, "House": 1, "Villa": 2}
 CURRENT_YEAR = datetime.now().year
 
 
 def build_feature_vector(req) -> np.ndarray:
+    house_age = CURRENT_YEAR - req.year_built
+    sqft_living = req.floor_area
+    bedrooms = req.bedrooms
+    bathrooms = req.bathrooms
+    floors = req.floor_number
+
+    # Defaults for missing features
+    sqft_lot = 5000
+    view = 0
+    grade = 7
+    sqft_above = sqft_living
+    sqft_basement = 0
+    zipcode = 98103
+    lat = 47.6062
+    long = -122.3321
+    sqft_living15 = sqft_living
+    sqft_lot15 = 5000
+    renovated = 0
+    years_since_renovation = house_age
+    total_sqft = sqft_living
+    has_basement = 0
+    price_per_sqft_area = sqft_living / (sqft_lot + 1)
+    bath_per_bed = bathrooms / (bedrooms + 1)
+    living_lot_ratio = sqft_living / (sqft_lot + 1)
+    condition_enc = 3
+    waterfront_enc = 0
+
     features = [
-        req.floor_area,                               # sqft_living
-        req.bedrooms,
-        req.bathrooms,
-        req.floor_number,                             # floors
-        CURRENT_YEAR - req.year_built,                # house_age
-        PROPERTY_TYPE_MAP.get(req.property_type, 1),  # property_type encoded
-        int(req.has_parking),
-        int(req.has_pool),
-        int(req.has_balcony),
-        int(req.has_elevator),
+        bedrooms,
+        bathrooms,
+        sqft_living,
+        sqft_lot,
+        floors,
+        view,
+        grade,
+        sqft_above,
+        sqft_basement,
+        zipcode,
+        lat,
+        long,
+        sqft_living15,
+        sqft_lot15,
+        house_age,
+        renovated,
+        years_since_renovation,
+        total_sqft,
+        has_basement,
+        price_per_sqft_area,
+        bath_per_bed,
+        living_lot_ratio,
+        condition_enc,
+        waterfront_enc,
     ]
-    return np.array([features], dtype=float)  # shape (1, 10)
+    return np.array([features], dtype=float)  # shape (1, 24)
 
 
 def build_price_factors(req, importances: np.ndarray, feature_names: list) -> dict:
     """Glass Box dict shown in [Results] Vizualizare Rezultate."""
     labels = {
-        "sqft_living":   "Floor area",
-        "bedrooms":      "Bedrooms",
-        "bathrooms":     "Bathrooms",
-        "floors":        "Floor number",
-        "house_age":     "Age of property",
-        "property_type": "Property type",
-        "has_parking":   "Parking garage",
-        "has_pool":      "Swimming pool",
-        "has_balcony":   "Balcony / Terrace",
-        "has_elevator":  "Elevator",
+        "bedrooms": "Bedrooms",
+        "bathrooms": "Bathrooms",
+        "sqft_living": "Floor area",
+        "sqft_lot": "Lot size",
+        "floors": "Floor number",
+        "view": "View",
+        "grade": "Grade",
+        "sqft_above": "Above ground area",
+        "sqft_basement": "Basement area",
+        "zipcode": "Zipcode",
+        "lat": "Latitude",
+        "long": "Longitude",
+        "sqft_living15": "Living area of 15 neighbors",
+        "sqft_lot15": "Lot size of 15 neighbors",
+        "house_age": "Age of property",
+        "renovated": "Renovated",
+        "years_since_renovation": "Years since renovation",
+        "total_sqft": "Total square footage",
+        "has_basement": "Has basement",
+        "price_per_sqft_area": "Price per sqft area",
+        "bath_per_bed": "Bathrooms per bedroom",
+        "living_lot_ratio": "Living to lot ratio",
+        "condition_enc": "Condition",
+        "waterfront_enc": "Waterfront",
     }
     return {
         labels.get(name, name): round(float(imp) * 100, 2)

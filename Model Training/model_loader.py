@@ -13,16 +13,30 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://hpa:hpa@localhost:5432/hp
 
 # Column order MUST match trainer.py FEATURE_COLS
 FEATURE_NAMES = [
-    "sqft_living",      # floor_area from the form
     "bedrooms",
     "bathrooms",
-    "floors",           # floor_number from the form
-    "house_age",        # derived: current_year - year_built
-    "property_type",    # encoded: Apartment=0, House=1, Villa=2
-    "has_parking",
-    "has_pool",
-    "has_balcony",
-    "has_elevator",
+    "sqft_living",
+    "sqft_lot",
+    "floors",
+    "view",
+    "grade",
+    "sqft_above",
+    "sqft_basement",
+    "zipcode",
+    "lat",
+    "long",
+    "sqft_living15",
+    "sqft_lot15",
+    "house_age",
+    "renovated",
+    "years_since_renovation",
+    "total_sqft",
+    "has_basement",
+    "price_per_sqft_area",
+    "bath_per_bed",
+    "living_lot_ratio",
+    "condition_enc",
+    "waterfront_enc",
 ]
 
 _model = None
