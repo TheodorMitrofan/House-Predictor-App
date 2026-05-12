@@ -1,1 +1,208 @@
-User dashboard page
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mt-8">
+    <div>
+      <h1 class="text-gray-900 text-xl font-bold">{{ greeting() }}, {{ (user()?.full_name ?? '').split(' ')[0] }} 👋</h1>
+      <p class="text-gray-500 text-lg mt-0.5">Here's what's happening with your property predictions.</p>
+    </div>
+    <button
+      (click)="navigateTo('/predict')"
+      class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+    >
+      <i class="pi pi-plus-circle text-sm"></i>
+      New Prediction
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+    <p-card>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+          <i class="pi pi-chart-line text-blue-600 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-gray-500 text-sm">Total Predictions</p>
+          <p class="text-gray-900 text-2xl font-bold">{{ totalPredictions() }}</p>
+          <p class="text-green-500 text-xs font-medium">+{{ newThisWeek() }} this week</p>
+        </div>
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+          <i class="pi pi-dollar text-green-600 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-gray-500 text-sm">Last Predicted Price</p>
+          <p class="text-gray-900 text-2xl font-bold">{{ formatPrice(lastPredictedPrice()) }}</p>
+          <p class="text-gray-400 text-xs">{{ lastPredictedLocation() }}</p>
+        </div>
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+          <i class="pi pi-trending-up text-purple-600 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-gray-500 text-sm">Average Predicted Value</p>
+          <p class="text-gray-900 text-2xl font-bold">{{ formatPrice(averagePredictedValue()) }}</p>
+          <p class="text-gray-400 text-xs">Across all predictions</p>
+        </div>
+      </div>
+    </p-card>
+
+  </div>
+
+  <!-- Chart + Quick Actions -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <!-- Prediction Trend Chart -->
+    <p-card class="lg:col-span-2">
+      <div class="flex flex-col gap-1 mb-4">
+        <p class="text-gray-900 font-bold text-lg">Prediction Trend</p>
+        <p class="text-gray-500 text-sm">Last 6 months</p>
+      </div>
+      <div style="height: 280px">
+        <p-chart type="line" [data]="predictionTrendData" [options]="predictionTrendOptions" height="280px" />
+      </div>
+    </p-card>
+
+    <!-- Quick Actions + Model Info -->
+    <div class="flex flex-col gap-4">
+
+      <p-card>
+        <p class="text-gray-900 font-bold text-lg mb-4">Quick Actions</p>
+
+        <button
+          (click)="navigateTo('/predict')"
+          class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group mb-2"
+        >
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+            <i class="pi pi-plus-circle text-white text-lg"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <p class="text-gray-900 font-semibold text-sm">Run New Prediction</p>
+            <p class="text-gray-400 text-xs">Estimate a property value</p>
+          </div>
+          <i class="pi pi-angle-right text-gray-300 group-hover:text-gray-500 transition-colors"></i>
+        </button>
+
+        <button
+          (click)="navigateTo('/history')"
+          class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
+        >
+          <div class="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center shrink-0">
+            <i class="pi pi-chart-line text-white text-lg"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <p class="text-gray-900 font-semibold text-sm">View History</p>
+            <p class="text-gray-400 text-xs">Browse all predictions</p>
+          </div>
+          <i class="pi pi-angle-right text-gray-300 group-hover:text-gray-500 transition-colors"></i>
+        </button>
+      </p-card>
+
+      <p-card>
+        <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Model Info</p>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-gray-600 text-sm">Accuracy</p>
+            <p class="text-gray-900 text-sm font-bold">{{ modelAccuracy() }}%</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <p class="text-gray-600 text-sm">Version</p>
+            <p class="text-gray-900 text-sm font-bold">{{ modelVersion() }}</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <p class="text-gray-600 text-sm">Status</p>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full" [ngClass]="modelStatus() ? 'bg-green-500' : 'bg-red-500'"></span>
+              <p class="text-sm font-medium" [ngClass]="modelStatus() ? 'text-green-600' : 'text-red-600'">
+                {{ modelStatus() ? 'Active' : 'Offline' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </p-card>
+
+    </div>
+  </div>
+
+  <!-- Recent Predictions Table -->
+  <p-card>
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-gray-900 font-bold text-lg">Recent Predictions</p>
+      <button
+        (click)="navigateTo('/history')"
+        class="flex items-center gap-1.5 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors"
+      >
+        View all
+        <i class="pi pi-arrow-up-right text-xs"></i>
+      </button>
+    </div>
+
+    <p-table [value]="recentPredictions()" [tableStyle]="{ 'min-width': '50rem' }">
+      <ng-template #header>
+        <tr>
+          <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</th>
+          <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Property</th>
+          <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Predicted Price</th>
+          <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Confidence</th>
+          <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+          <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-pred>
+        <tr class="hover:bg-gray-50 transition-colors">
+          <!-- Location -->
+          <td>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-map-marker text-gray-400 text-xs"></i>
+              <span class="text-gray-900 font-medium text-sm">{{ pred.location }}</span>
+            </div>
+          </td>
+
+          <!-- Property -->
+          <td>
+            <span class="text-gray-600 text-sm">{{ pred.property }}</span>
+          </td>
+
+          <!-- Predicted Price -->
+          <td>
+            <span class="text-gray-900 font-semibold text-sm">{{ formatPrice(pred.predictedPrice) }}</span>
+          </td>
+
+          <!-- Confidence -->
+          <td>
+            <span
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+              [ngClass]="getConfidenceColor(pred.confidence)"
+            >
+              {{ pred.confidence }}%
+            </span>
+          </td>
+
+          <!-- Date -->
+          <td>
+            <span class="text-gray-400 text-sm">{{ pred.date }}</span>
+          </td>
+
+          <!-- Details -->
+          <td>
+            <button class="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors">
+              Details
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+</div>
