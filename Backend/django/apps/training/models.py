@@ -5,19 +5,20 @@ from django.db import models
 class TrainingData(models.Model):
     """
     Dataset used to train the ML model.
-    Columns match the Kaggle house_prices.csv dataset from the EDA notebook.
+    Schema matches what pandas.to_sql creates from house_prices.csv.
+    Table is managed by load_csv_to_db.py, not by Django migrations.
     """
-    id = models.BigAutoField(primary_key=True, db_column="idL")
-    date = models.DateField(blank=True, null=True)
+    id = models.BigIntegerField(primary_key=True)
+    date = models.TextField(blank=True, null=True)
     price = models.FloatField()
     bedrooms = models.IntegerField()
-    bathrooms = models.IntegerField()
+    bathrooms = models.FloatField()
     sqft_living = models.IntegerField()
     sqft_lot = models.IntegerField()
     floors = models.FloatField()
-    waterfront = models.BooleanField(default=False)
+    waterfront = models.CharField(max_length=1, default='N')
     view = models.IntegerField(default=0)
-    condition = models.IntegerField()
+    condition = models.CharField(max_length=20)
     grade = models.IntegerField()
     sqft_above = models.IntegerField()
     sqft_basement = models.IntegerField()
@@ -31,6 +32,7 @@ class TrainingData(models.Model):
 
     class Meta:
         db_table = "training_data"
+        managed = False
 
 
 class RunHistory(models.Model):

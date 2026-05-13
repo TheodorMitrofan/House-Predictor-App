@@ -38,12 +38,14 @@ def predict(req: PredictionRequest):
 
     X = build_feature_vector(req)
 
-    # Collect predictions from every tree for confidence calculation
-    tree_preds = np.array([tree.predict(X)[0] for tree in model.estimators_])
-    predicted_price = int(np.mean(tree_preds))
+    predicted_price = int(model.predict(X)[0])
 
-    # Confidence: how tightly the trees agree (1 - coefficient of variation)
-    std = np.std(tree_preds)
+    # Confidence: staged predictions across tree checkpoints → coefficient of variation
+    n = model.n_estimators
+    step = max(1, n // 30)
+    checkpoints = list(range(step, n, step)) + [n]
+    stage_preds = np.array([model.predict(X, num_iteration=i)[0] for i in checkpoints])
+    std = np.std(stage_preds)
     cv  = std / (predicted_price + 1e-9)
     confidence = round(float(np.clip(1 - cv, 0.0, 1.0)), 4)
 

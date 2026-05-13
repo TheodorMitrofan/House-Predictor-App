@@ -22,19 +22,30 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.4
+    platform: linux/arm64   # force native ARM64 — amd64 via Rosetta 2 crashes in BigInteger.mulAdd
     container_name: hpa-keycloak
     command: start-dev
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      # Use PostgreSQL instead of the default embedded H2.
+      # H2 has a known concurrent-update bug when creating realms in dev mode.
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/hpa
+      KC_DB_USERNAME: hpa
+      KC_DB_PASSWORD: hpa
     ports:
       - "8080:8080"
+      # port 9000 is Keycloak's internal management port used only by the health check
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 30s
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   minio:
     image: minio/minio:latest
@@ -78,12 +89,12 @@ services:
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     environment:
-      DATABASE_URL: postgres://hpa:hpa@postgres:5432/hpa
+      DATABASE_URL: postgresql://hpa:hpa@postgres:5432/hpa
       ML_SERVICE_URL: http://ml-service:8001
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: hpa
       KEYCLOAK_CLIENT_ID: hpa-backend
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      KEYCLOAK_CLIENT_SECRET: 1fPKNDO0rqGKjaSJz4a2674l707ju25t
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -96,7 +107,7 @@ services:
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
 
   # ─── FastAPI ML service ───────────────────────────────────────────
   ml-service:
@@ -105,7 +116,7 @@ services:
       dockerfile: Dockerfile
     container_name: hpa-ml-service
     environment:
-      DATABASE_URL: postgres://hpa:hpa@postgres:5432/hpa
+      DATABASE_URL: postgresql://hpa:hpa@postgres:5432/hpa
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin

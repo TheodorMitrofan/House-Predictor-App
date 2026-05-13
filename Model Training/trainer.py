@@ -191,9 +191,9 @@ def run_retrain():
             conn.execute(
                 text("""
                     INSERT INTO run_history
-                        (id, date, duration, accuracy, "datasetSize", success, version)
+                        (id, date, duration, accuracy, "datasetSize", success, "modelPath", "isActive", version)
                     VALUES
-                        (:id, :date, :duration, :accuracy, :dataset_size, :success, :version)
+                        (:id, :date, :duration, :accuracy, :dataset_size, :success, :model_path, :is_active, :version)
                 """),
                 {
                     "id":           str(uuid.uuid4()),
@@ -202,6 +202,8 @@ def run_retrain():
                     "accuracy":     0.0,
                     "dataset_size": 0,
                     "success":      False,
+                    "model_path":   "",
+                    "is_active":    False,
                     "version":      version,
                 }
             )
