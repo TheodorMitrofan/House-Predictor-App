@@ -6,6 +6,8 @@ import { AdminDashboardPage } from './app/pages/dashboard/admin/admin-dashboard.
 import { UserDashboardPage } from './app/pages/dashboard/user/user-dashboard.page';
 import { ProfilePage } from './app/pages/profile/profile.page';
 import { DataManagementPage } from './app/pages/data-management/data-management.page';
+import { NewPredictionPage } from './app/pages/prediction/new-prediction/new-prediction.page';
+import { PredictionResultPage } from './app/pages/prediction/prediction-result/prediction-result.page';
 import { authGuard } from './app/shared/guards/auth.guard';
 
 export const routes: Routes = [
@@ -20,6 +22,8 @@ export const routes: Routes = [
       { path: "user", component: UserDashboardPage },
       { path: "profile", component: ProfilePage },
       { path: "data-management", component: DataManagementPage },
+      { path: "predict", component: NewPredictionPage },
+      { path: "predict/result/:id", component: PredictionResultPage },
     ],
   },
 ];

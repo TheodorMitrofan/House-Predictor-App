@@ -28,11 +28,11 @@ export class UserService {
     const params: Record<string, string> = {};
     if (search) params['search'] = search;
     if (role && role !== 'All') params['role'] = role.toLowerCase();
-    return firstValueFrom(this.http.get<User[]>(this.baseUrl, { params }));
+    return firstValueFrom(this.http.get<User[]>(`${this.baseUrl}/`, { params }));
   }
 
   async getUser(): Promise<User> {
-    return firstValueFrom(this.http.get<User>(`${this.baseUrl}/me`));
+    return firstValueFrom(this.http.get<User>(`${this.baseUrl}/me/`));
   }
 
   async load(): Promise<User> {

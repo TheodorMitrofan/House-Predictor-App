@@ -138,6 +138,7 @@ class AdminCreateUserView(APIView):
                     "lastName": last_name,
                     "enabled": True,
                     "emailVerified": True,
+                    "requiredActions": [],
                     "credentials": [{
                         "type": "password",
                         "value": password,
@@ -146,6 +147,7 @@ class AdminCreateUserView(APIView):
                 },
                 exist_ok=False,
             )
+            admin.update_user(kc_user_id, {"requiredActions": []})
         except KeycloakPostError as e:
             if getattr(e, "response_code", None) == 409:
                 return Response(
@@ -218,14 +220,16 @@ class AuthRegisterView(APIView):
                     "lastName": last_name,
                     "enabled": True,
                     "emailVerified": True,
-                      "credentials": [{
-                          "type": "password",
-                          "value": password,
-                          "temporary": False,
-                      }],
-                  },
-                  exist_ok=False,
+                    "requiredActions": [],
+                    "credentials": [{
+                        "type": "password",
+                        "value": password,
+                        "temporary": False,
+                    }],
+                },
+                exist_ok=False,
             )
+            admin.update_user(kc_user_id, {"requiredActions": []})
         except KeycloakPostError as e:
             if getattr(e,"response_code", None) == 409:
                 return Response(
@@ -236,7 +240,7 @@ class AuthRegisterView(APIView):
                 {"detail":str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        
+
         try:
             user = User.objects.create(
                 id=kc_user_id,

@@ -1,0 +1,165 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-3xl mx-auto px-6 py-8">
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="flex items-center justify-center py-24">
+        <i class="pi pi-spin pi-spinner text-blue-600 text-3xl"></i>
+      </div>
+    }
+
+    <!-- Error -->
+    @if (!loading() && error()) {
+      <div class="rounded-lg bg-red-50 border border-red-200 p-6 text-center">
+        <i class="pi pi-exclamation-circle text-red-500 text-2xl mb-3"></i>
+        <p class="text-red-700 text-sm">{{ error() }}</p>
+        <a routerLink="/dashboard/predict"
+           class="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline">
+          ← Back to New Prediction
+        </a>
+      </div>
+    }
+
+    <!-- Result -->
+    @if (!loading() && !error() && prediction(); as p) {
+
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Prediction Result</h1>
+          <p class="text-sm text-gray-500 mt-0.5">{{ p.location }} · {{ p.property_type }}</p>
+        </div>
+        <a routerLink="/dashboard/predict"
+           class="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700">
+          <i class="pi pi-plus-circle"></i> New Prediction
+        </a>
+      </div>
+
+      <!-- ── Price card ──────────────────────────────────────────────── -->
+      <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-8 mb-4 text-white text-center shadow-lg">
+        <p class="text-sm font-medium text-blue-100 mb-2">Estimated Market Value</p>
+        <p class="text-5xl font-extrabold tracking-tight">
+          ${{ p.prediction_value | number:'1.0-0' }}
+        </p>
+        <div class="mt-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-sm">
+          <i class="pi pi-check-circle"></i>
+          <span>Confidence: <strong>{{ confidenceLabel(p.confidence) }}</strong>
+            ({{ (p.confidence * 100) | number:'1.0-0' }}%)
+          </span>
+        </div>
+      </div>
+
+      <!-- ── Explanation ─────────────────────────────────────────────── -->
+      @if (p.explanation) {
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <i class="pi pi-info-circle text-blue-600"></i>
+            <h3 class="font-semibold text-gray-900">Summary</h3>
+          </div>
+          <p class="text-sm text-gray-600 leading-relaxed">{{ p.explanation }}</p>
+        </div>
+      }
+
+      <!-- ── Property details ────────────────────────────────────────── -->
+      <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="pi pi-home text-green-600"></i>
+          <h3 class="font-semibold text-gray-900">Property Details</h3>
+        </div>
+        <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Type</span>
+            <span class="font-medium text-gray-900">{{ p.property_type }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Floor Area</span>
+            <span class="font-medium text-gray-900">{{ p.floor_area }} m²</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Bedrooms</span>
+            <span class="font-medium text-gray-900">{{ p.bedrooms }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Bathrooms</span>
+            <span class="font-medium text-gray-900">{{ p.bathrooms ?? '—' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Year Built</span>
+            <span class="font-medium text-gray-900">{{ p.year_built }}</span>
+          </div>
+          @if (p.floor_number) {
+            <div class="flex justify-between">
+              <span class="text-gray-500">Floor</span>
+              <span class="font-medium text-gray-900">{{ p.floor_number }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ── Price factors ───────────────────────────────────────────── -->
+      @if (priceFactor.length) {
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="pi pi-chart-bar text-purple-600"></i>
+            <h3 class="font-semibold text-gray-900">Key Price Factors</h3>
+          </div>
+          <div class="space-y-3">
+            @for (factor of priceFactor; track factor.label) {
+              <div>
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>{{ factor.label }}</span>
+                  <span class="font-medium">{{ factor.value | number:'1.1-1' }}%</span>
+                </div>
+                <div class="h-2 w-full rounded-full bg-gray-100">
+                  <div
+                    class="h-2 rounded-full bg-blue-500 transition-all"
+                    [style.width.%]="(factor.value / maxFactor) * 100"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── Improvement tips ────────────────────────────────────────── -->
+      @if (p.tips && p.tips.length) {
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="pi pi-lightbulb text-orange-500"></i>
+            <h3 class="font-semibold text-gray-900">Improvement Tips</h3>
+          </div>
+          <div class="space-y-3">
+            @for (tip of p.tips; track tip.action) {
+              <div class="flex items-start gap-3 rounded-lg bg-orange-50 border border-orange-100 p-4">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900">{{ tip.action }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    Cost: ${{ tip.cost_min | number }} – ${{ tip.cost_max | number }}
+                  </p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-1">
+                    +${{ tip.value_added | number }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── Actions ─────────────────────────────────────────────────── -->
+      <div class="flex items-center gap-3 justify-end">
+        <a routerLink="/dashboard/user"
+           class="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+          Dashboard
+        </a>
+        <a routerLink="/dashboard/predict"
+           class="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">
+          <i class="pi pi-sparkles"></i> New Prediction
+        </a>
+      </div>
+    }
+
+  </div>
+</div>

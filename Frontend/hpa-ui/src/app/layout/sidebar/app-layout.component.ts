@@ -61,11 +61,11 @@ import { UserService } from '../../shared/services/user.service';
                   <i icon class="pi pi-database"></i>
                 </app-sidebar-menu-item>
               } @else {
-                <app-sidebar-menu-item label="New Prediction" route="/predict">
+                <app-sidebar-menu-item label="New Prediction" route="/dashboard/predict">
                   <i icon class="pi pi-plus-circle"></i>
                 </app-sidebar-menu-item>
 
-                <app-sidebar-menu-item label="History" route="/history">
+                <app-sidebar-menu-item label="History" route="/dashboard/history">
                   <i icon class="pi pi-history"></i>
                 </app-sidebar-menu-item>
               }

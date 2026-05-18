@@ -10,10 +10,18 @@ CURRENT_YEAR = datetime.now().year
 
 def build_feature_vector(req) -> np.ndarray:
     house_age = CURRENT_YEAR - req.year_built
-    sqft_living = req.floor_area
+    sqft_living = req.floor_area * 10.764   # UI sends m², model trained on sqft
     bedrooms = req.bedrooms
     bathrooms = req.bathrooms
-    floors = req.floor_number
+    floors = max(req.floor_number or 1, 1)  # number of floors (min 1)
+
+    # Parse zipcode from location if numeric, else default to central Seattle
+    try:
+        zipcode = int(str(req.location).strip()[:5])
+        if not (90000 <= zipcode <= 99999):
+            zipcode = 98103
+    except (ValueError, TypeError):
+        zipcode = 98103
 
     # Defaults for missing features
     sqft_lot = 5000
@@ -21,7 +29,6 @@ def build_feature_vector(req) -> np.ndarray:
     grade = 7
     sqft_above = sqft_living
     sqft_basement = 0
-    zipcode = 98103
     lat = 47.6062
     long = -122.3321
     sqft_living15 = sqft_living
