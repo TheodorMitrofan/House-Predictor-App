@@ -1,0 +1,251 @@
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="mt-8">
+    <h1 class="text-gray-900 text-xl font-bold">Model Training</h1>
+    <p class="text-gray-500 text-lg mt-0.5">Retrain the AI prediction model with the latest dataset</p>
+  </div>
+
+  <!-- Current Model + Before Retraining -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <p-card class="lg:col-span-2">
+      <div class="space-y-5">
+
+        <!-- Header row -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <i class="pi pi-microchip-ai text-blue-500 text-lg"></i>
+            </div>
+            <div>
+              <p class="text-gray-900 font-semibold">Current Model</p>
+              <p class="text-gray-500 text-sm">ProphetAI Prediction Engine</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-1 rounded-full"
+               [ngClass]="isInProgress() ? 'bg-amber-50' : 'bg-green-50'">
+            <span class="w-2 h-2 rounded-full"
+                  [ngClass]="isInProgress() ? 'bg-amber-500 animate-pulse' : 'bg-green-500'"></span>
+            <span class="text-xs font-medium"
+                  [ngClass]="isInProgress() ? 'text-amber-600' : 'text-green-600'">
+              {{ isInProgress() ? 'In Progress' : 'Active' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 3 metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+          <div class="rounded-lg border border-gray-100 p-4">
+            <div class="flex items-center gap-2 text-gray-500 text-xs">
+              <i class="pi pi-arrow-up-right"></i>
+              <span>Accuracy</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ accuracyPct(active()?.accuracy) }}</p>
+          </div>
+
+          <div class="rounded-lg border border-gray-100 p-4">
+            <div class="flex items-center gap-2 text-gray-500 text-xs">
+              <i class="pi pi-database"></i>
+              <span>Training Data</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatNumber(active()?.dataset_size) }}</p>
+            <p class="text-gray-400 text-xs">records</p>
+          </div>
+
+          <div class="rounded-lg border border-gray-100 p-4">
+            <div class="flex items-center gap-2 text-gray-500 text-xs">
+              <i class="pi pi-clock"></i>
+              <span>Last Trained</span>
+            </div>
+            <p class="text-lg font-semibold text-gray-900 mt-1">{{ lastTrainedRelative() }}</p>
+          </div>
+
+        </div>
+
+        <!-- Progress bar -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <p class="text-xs text-gray-600">{{ progressLabel() }}</p>
+            <p class="text-xs text-gray-500">{{ status().progress }}%</p>
+          </div>
+          <p-progressbar [value]="status().progress" [showValue]="false" [style]="{ height: '8px' }" />
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center gap-2">
+          <button
+            (click)="onRetrain()"
+            [disabled]="retraining()"
+            class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+            <i class="pi pi-play-circle"></i>
+            Retrain Model
+          </button>
+          <button
+            (click)="onReset()"
+            [disabled]="retraining()"
+            class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50">
+            Reset
+          </button>
+        </div>
+
+      </div>
+    </p-card>
+
+    <p-card>
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-exclamation-triangle text-amber-500"></i>
+          <p class="text-gray-900 font-semibold">Before Retraining</p>
+        </div>
+        <ul class="space-y-2 text-sm text-gray-600 list-disc pl-5">
+          <li>Ensure dataset is clean and validated</li>
+          <li>Training may take 4–6 minutes</li>
+          <li>Predictions are paused during training</li>
+          <li>Previous model version is auto-saved</li>
+        </ul>
+        <hr class="border-gray-100" />
+        <p class="text-xs text-gray-500">
+          Current version: <span class="font-medium text-amber-600">{{ formatVersion() }}</span>
+        </p>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Training Log console -->
+  <p-card styleClass="!bg-gray-900">
+    <div class="space-y-2">
+      <p class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Training Log</p>
+      <div #logBox
+           class="font-mono text-xs text-green-400 h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+        @for (line of status().logs; track $index) {
+          <div [ngClass]="{
+            'text-red-400': line.includes('✗') || line.includes('failed'),
+            'text-emerald-400': line.includes('✓') || line.includes('successfully'),
+            'text-amber-300': line.includes('⚠')
+          }">{{ line }}</div>
+        } @empty {
+          <div class="text-gray-500">No active training. Press "Retrain Model" to start.</div>
+        }
+      </div>
+    </div>
+  </p-card>
+
+  <!-- Comparison snapshot -->
+  @if (comparison(); as cmp) {
+    <p-card>
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-chart-bar text-blue-500"></i>
+          <p class="text-gray-900 font-semibold">Last Training Result</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <p class="text-xs text-blue-600 uppercase tracking-wider font-semibold">New Model</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ accuracyPct(cmp.newRun.accuracy) }}</p>
+            <p class="text-xs text-gray-500 mt-1">
+              RMSE: {{ formatRmse(cmp.newRun.rmse) }} · {{ formatNumber(cmp.newRun.dataset_size) }} records
+            </p>
+          </div>
+          <div class="rounded-lg border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Previous Model</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">
+              {{ cmp.previous ? accuracyPct(cmp.previous.accuracy) : '—' }}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+              @if (cmp.previous) {
+                RMSE: {{ formatRmse(cmp.previous.rmse) }} · {{ formatNumber(cmp.previous.dataset_size) }} records
+              } @else {
+                No prior model
+              }
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-sm"
+             [ngClass]="cmp.activated ? 'text-green-600' : 'text-gray-500'">
+          <i class="pi" [ngClass]="cmp.activated ? 'pi-check-circle' : 'pi-info-circle'"></i>
+          <span>
+            @if (cmp.activated) {
+              New model activated automatically.
+            } @else {
+              Previous model kept (new accuracy not higher).
+            }
+          </span>
+        </div>
+      </div>
+    </p-card>
+  }
+
+  <!-- Training History -->
+  <p-card>
+    <div class="space-y-4">
+      <p class="text-gray-900 font-semibold">Training History</p>
+
+      <p-table
+        [value]="history()"
+        [lazy]="true"
+        [paginator]="true"
+        [rows]="pageSize"
+        [totalRecords]="totalRuns()"
+        [first]="first()"
+        [loading]="loadingHistory()"
+        (onLazyLoad)="onLazyLoad($event)"
+        [tableStyle]="{ 'min-width': '60rem' }">
+
+        <ng-template #header>
+          <tr>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Run ID</th>
+            <th pSortableColumn="date" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Date <p-sortIcon field="date" />
+            </th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Duration</th>
+            <th pSortableColumn="accuracy" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Accuracy <p-sortIcon field="accuracy" />
+            </th>
+            <th pSortableColumn="dataset_size" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Dataset Size <p-sortIcon field="dataset_size" />
+            </th>
+            <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-run>
+          <tr>
+            <td>
+              <span class="font-mono text-xs text-gray-700">{{ shortRunId(run.id) }}</span>
+              @if (run.is_active) {
+                <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">active</span>
+              }
+            </td>
+            <td>
+              <span class="text-sm text-gray-700">{{ formatDate(run.date) }}</span>
+            </td>
+            <td>
+              <span class="text-sm text-gray-700">{{ formatDuration(run.duration) }}</span>
+            </td>
+            <td>
+              <span class="text-sm font-semibold text-gray-900">{{ accuracyPct(run.accuracy) }}</span>
+            </td>
+            <td>
+              <span class="text-sm text-gray-700">{{ formatNumber(run.dataset_size) }}</span>
+            </td>
+            <td>
+              @if (run.success) {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">
+                  <i class="pi pi-check-circle text-xs"></i> Success
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600"
+                      [title]="run.error_message || ''">
+                  <i class="pi pi-times-circle text-xs"></i> Failed
+                </span>
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </p-card>
+
+</div>

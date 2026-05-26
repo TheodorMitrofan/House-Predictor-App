@@ -65,6 +65,26 @@ class ActiveModelView(APIView):
         return Response(RunHistorySerializer(active).data)
 
 
+class TrainingStatusView(APIView):
+    """GET /api/training/status/  — proxies the FastAPI in-memory training state.
+
+    Authenticated (not admin-only) so non-admin users can see the global
+    "predictions paused" banner during a retrain.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            response = requests.get(
+                f"{settings.ML_SERVICE_URL}/training-status",
+                timeout=5,
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response(response.json())
+
+
 # ── Data Management ───────────────────────────────────────────────────
 
 class TrainingDataCreateView(APIView):
