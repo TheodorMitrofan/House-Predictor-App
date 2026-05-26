@@ -16,6 +16,7 @@ from .serializers import (
       RefreshSerializer,
       TotalUsersSerializer,
 )
+from apps.common.search import SearchSerializer, apply_search, paginated_response
 from hpa.permissions import IsAdmin
 from hpa.auth import get_keycloak_admin, get_keycloak_openid
 
@@ -38,22 +39,25 @@ class MeView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserListView(APIView):
-    """GET /api/users/  — admin: list + search + filter users"""
+class UserSearchView(APIView):
+    """POST /api/users/search/  — admin: paginated user list with filters/sorters"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
-    def get(self, request):
-        search = request.query_params.get("search", "")
-        role = request.query_params.get("role", "")
-        users = User.objects.all()
-        if search:
-            users = (
-                users.filter(email__icontains=search)
-                | users.filter(full_name__icontains=search)
-            )
-        if role and role.lower() in ("admin", "user"):
-            users = users.filter(role=role.lower())
-        return Response(UserSerializer(users, many=True).data)
+    ALLOWED_EQ = {"role", "is_active"}
+    ALLOWED_CONTAINS = {"email", "full_name"}
+    ALLOWED_SORT = {"full_name", "email", "created_date", "role", "is_active"}
+
+    def post(self, request):
+        search = SearchSerializer(data=request.data)
+        search.is_valid(raise_exception=True)
+        qs = apply_search(
+            User.objects.all().order_by("created_date"),
+            search.validated_data,
+            allowed_eq=self.ALLOWED_EQ,
+            allowed_contains=self.ALLOWED_CONTAINS,
+            allowed_sort=self.ALLOWED_SORT,
+        )
+        return paginated_response(qs, search.validated_data, UserSerializer)
 
 
 class UserDetailView(APIView):

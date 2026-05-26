@@ -3,23 +3,21 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environment/environment';
 import { TrainingData } from '../models/TrainingData';
-import { PaginatedResponse } from '../../../shared/models/PaginatedResponse';
+import { PagedResult } from '../../../shared/models/paged-result';
+import { SearchDTO } from '../../../shared/models/search-dto';
+
+export type TrainingDataField =
+  | 'id' | 'price' | 'yr_built' | 'grade' | 'bedrooms' | 'sqft_living'
+  | 'zipcode' | 'condition' | 'waterfront';
 
 @Injectable({ providedIn: 'root' })
 export class DataManagementService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.baseApiUrl}/training/data`;
 
-  async list(page: number = 1, pageSize: number = 20, search?: string): Promise<PaginatedResponse<TrainingData>> {
-    const params: Record<string, string> = {
-      page: String(page),
-      page_size: String(pageSize),
-    };
-    if (search) {
-      params['search'] = search;
-    }
+  async search(dto: SearchDTO<TrainingDataField>): Promise<PagedResult<TrainingData>> {
     return firstValueFrom(
-      this.http.get<PaginatedResponse<TrainingData>>(`${this.baseUrl}/`, { params }),
+      this.http.post<PagedResult<TrainingData>>(`${this.baseUrl}/search/`, dto),
     );
   }
 

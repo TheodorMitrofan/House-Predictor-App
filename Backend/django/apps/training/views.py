@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
+from apps.common.search import SearchSerializer, apply_search, paginated_response
 from hpa.permissions import IsAdmin
 from .models import RunHistory, TrainingData
 from .serializers import RunHistorySerializer, TrainingDataSerializer, TrainingDataWriteSerializer
@@ -32,13 +33,25 @@ class RetrainView(APIView):
         return Response({"message": "Reantrenare pornită. Verificați Training History pentru progres."})
 
 
-class RunHistoryListView(APIView):
-    """GET /api/training/run-history/"""
+class RunHistorySearchView(APIView):
+    """POST /api/training/run-history/search/  — paginated run history with filters/sorters"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
-    def get(self, request):
-        runs = RunHistory.objects.all()
-        return Response(RunHistorySerializer(runs, many=True).data)
+    ALLOWED_EQ = {"is_active", "success", "version"}
+    ALLOWED_CONTAINS = {"version"}
+    ALLOWED_SORT = {"date", "accuracy", "dataset_size"}
+
+    def post(self, request):
+        search = SearchSerializer(data=request.data)
+        search.is_valid(raise_exception=True)
+        qs = apply_search(
+            RunHistory.objects.all(),
+            search.validated_data,
+            allowed_eq=self.ALLOWED_EQ,
+            allowed_contains=self.ALLOWED_CONTAINS,
+            allowed_sort=self.ALLOWED_SORT,
+        )
+        return paginated_response(qs, search.validated_data, RunHistorySerializer)
 
 
 class ActiveModelView(APIView):
@@ -54,40 +67,9 @@ class ActiveModelView(APIView):
 
 # ── Data Management ───────────────────────────────────────────────────
 
-class TrainingDataListView(APIView):
-    """
-    GET  /api/training/data/  — paginated table with optional search
-    POST /api/training/data/  — Add Entry (single row)
-    """
+class TrainingDataCreateView(APIView):
+    """POST /api/training/data/  — Add Entry (single row)"""
     permission_classes = [IsAuthenticated, IsAdmin]
-
-    def get(self, request):
-        search = request.query_params.get("search", "")
-        try:
-            page = max(int(request.query_params.get("page", 1)), 1)
-        except (TypeError, ValueError):
-            page = 1
-        try:
-            page_size = max(int(request.query_params.get("page_size", 20)), 1)
-        except (TypeError, ValueError):
-            page_size = 20
-
-        qs = TrainingData.objects.all().order_by("id")
-        if search:
-            qs = qs.filter(zipcode__icontains=search)
-
-        total = qs.count()
-        total_pages = (total + page_size - 1) // page_size if total else 1
-        start = (page - 1) * page_size
-        end = start + page_size
-
-        return Response({
-            "count": total,
-            "page": page,
-            "page_size": page_size,
-            "total_pages": total_pages,
-            "results": TrainingDataSerializer(qs[start:end], many=True).data,
-        })
 
     def post(self, request):
         serializer = TrainingDataWriteSerializer(data=request.data)
@@ -95,6 +77,27 @@ class TrainingDataListView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TrainingDataSearchView(APIView):
+    """POST /api/training/data/search/  — paginated dataset with filters/sorters"""
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    ALLOWED_EQ = {"zipcode", "bedrooms", "grade", "condition", "yr_built", "waterfront"}
+    ALLOWED_CONTAINS = {"condition"}
+    ALLOWED_SORT = {"id", "price", "yr_built", "grade", "bedrooms", "sqft_living", "zipcode"}
+
+    def post(self, request):
+        search = SearchSerializer(data=request.data)
+        search.is_valid(raise_exception=True)
+        qs = apply_search(
+            TrainingData.objects.all().order_by("id"),
+            search.validated_data,
+            allowed_eq=self.ALLOWED_EQ,
+            allowed_contains=self.ALLOWED_CONTAINS,
+            allowed_sort=self.ALLOWED_SORT,
+        )
+        return paginated_response(qs, search.validated_data, TrainingDataSerializer)
 
 
 class TrainingDataDetailView(APIView):

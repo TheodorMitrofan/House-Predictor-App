@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environment/environment';
 import { User } from '../../pages/auth/models/User';
 import { firstValueFrom } from 'rxjs';
+import { SearchDTO } from '../models/search-dto';
+import { PagedResult } from '../models/paged-result';
 
 export interface AdminCreateUserPayload {
   full_name: string;
@@ -17,6 +19,9 @@ export interface AdminUpdateUserPayload {
   is_active?: boolean;
 }
 
+export type UserField =
+  | 'role' | 'is_active' | 'email' | 'full_name' | 'created_date';
+
 @Injectable({providedIn: "root"})
 export class UserService {
   private readonly http = inject(HttpClient);
@@ -24,11 +29,10 @@ export class UserService {
 
   readonly currentUser = signal<User | null>(null);
 
-  async getUsers(search?: string, role?: string): Promise<User[]> {
-    const params: Record<string, string> = {};
-    if (search) params['search'] = search;
-    if (role && role !== 'All') params['role'] = role.toLowerCase();
-    return firstValueFrom(this.http.get<User[]>(`${this.baseUrl}/`, { params }));
+  async searchUsers(dto: SearchDTO<UserField>): Promise<PagedResult<User>> {
+    return firstValueFrom(
+      this.http.post<PagedResult<User>>(`${this.baseUrl}/search/`, dto),
+    );
   }
 
   async getUser(): Promise<User> {
@@ -66,4 +70,3 @@ export class UserService {
   }
 
 }
-

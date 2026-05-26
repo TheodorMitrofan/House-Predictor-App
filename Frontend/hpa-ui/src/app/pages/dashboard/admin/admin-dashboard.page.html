@@ -191,7 +191,16 @@
         </div>
       </div>
 
-      <p-table [value]="users()" [tableStyle]="{ 'min-width': '60rem' }">
+      <p-table
+        [value]="users()"
+        [lazy]="true"
+        [paginator]="true"
+        [rows]="pageSize"
+        [totalRecords]="totalUsers()"
+        [first]="first()"
+        [loading]="loadingUsers()"
+        (onLazyLoad)="onLazyLoad($event)"
+        [tableStyle]="{ 'min-width': '60rem' }">
         <ng-template #header>
           <tr>
             <th class="text-xs font-semibold text-gray-400 uppercase tracking-wider">User</th>
