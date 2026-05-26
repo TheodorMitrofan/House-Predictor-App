@@ -1,12 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DecimalPipe, NgClass } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { PredictionService } from '../services/prediction.service';
 import { Prediction } from '../models/Prediction';
 
 @Component({
   templateUrl: 'prediction-result.page.html',
-  imports: [NgClass, RouterModule, DecimalPipe],
+  imports: [RouterModule, DecimalPipe],
 })
 export class PredictionResultPage implements OnInit {
   private readonly route = inject(ActivatedRoute);

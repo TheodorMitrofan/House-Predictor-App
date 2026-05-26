@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environment/environment';
 import { Prediction, PredictionRequest } from '../models/Prediction';
+import { SearchDTO } from '../../../shared/models/search-dto';
+import { PagedResult } from '../../../shared/models/paged-result';
+
+export type PredictionField =
+  | 'property_type' | 'location' | 'bedrooms' | 'bathrooms'
+  | 'has_parking' | 'has_pool' | 'has_balcony' | 'has_elevator'
+  | 'created_at' | 'prediction_value' | 'floor_area' | 'year_built';
 
 @Injectable({ providedIn: 'root' })
 export class PredictionService {
@@ -21,12 +28,9 @@ export class PredictionService {
     );
   }
 
-  async history(search?: string, type?: string): Promise<Prediction[]> {
-    const params: Record<string, string> = {};
-    if (search) params['search'] = search;
-    if (type && type !== 'All') params['type'] = type;
+  async search(dto: SearchDTO<PredictionField>): Promise<PagedResult<Prediction>> {
     return firstValueFrom(
-      this.http.get<Prediction[]>(`${this.baseUrl}/history/`, { params }),
+      this.http.post<PagedResult<Prediction>>(`${this.baseUrl}/search/`, dto),
     );
   }
 }
