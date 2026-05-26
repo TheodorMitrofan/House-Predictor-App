@@ -49,6 +49,8 @@ class RunHistory(models.Model):
     model_path = models.CharField(max_length=500, db_column="modelPath", blank=True, null=True)
     is_active = models.BooleanField(default=False, db_column="isActive")
     version = models.CharField(max_length=50, blank=True, null=True)
+    rmse = models.FloatField(blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = "run_history"

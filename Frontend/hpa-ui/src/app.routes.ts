@@ -6,9 +6,11 @@ import { AdminDashboardPage } from './app/pages/dashboard/admin/admin-dashboard.
 import { UserDashboardPage } from './app/pages/dashboard/user/user-dashboard.page';
 import { ProfilePage } from './app/pages/profile/profile.page';
 import { DataManagementPage } from './app/pages/data-management/data-management.page';
+import { ModelTrainingPage } from './app/pages/model-training/model-training.page';
 import { NewPredictionPage } from './app/pages/prediction/new-prediction/new-prediction.page';
 import { PredictionResultPage } from './app/pages/prediction/prediction-result/prediction-result.page';
 import { authGuard } from './app/shared/guards/auth.guard';
+import { adminGuard } from './app/shared/guards/admin.guard';
 
 export const routes: Routes = [
   { path: "", component: LoginPage },
@@ -18,10 +20,11 @@ export const routes: Routes = [
     component: AppLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: "admin", component: AdminDashboardPage },
+      { path: "admin", component: AdminDashboardPage, canActivate: [adminGuard] },
       { path: "user", component: UserDashboardPage },
       { path: "profile", component: ProfilePage },
-      { path: "data-management", component: DataManagementPage },
+      { path: "data-management", component: DataManagementPage, canActivate: [adminGuard] },
+      { path: "model-training", component: ModelTrainingPage, canActivate: [adminGuard] },
       { path: "predict", component: NewPredictionPage },
       { path: "predict/result/:id", component: PredictionResultPage },
     ],
