@@ -56,7 +56,7 @@ class RunHistorySearchView(APIView):
 
 class ActiveModelView(APIView):
     """GET /api/training/active-model/  — stats card in admin Model Training page"""
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         active = RunHistory.objects.filter(is_active=True).first()
