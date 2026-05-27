@@ -138,8 +138,13 @@ export class AdminDashboardPage implements OnInit {
     return this.adminStatistics()?.dataset_size ?? 0;
   }
 
-  modelAccuracy(): number {
-    return this.adminStatistics()?.model_accuracy ?? 0;
+  modelAccuracy(): string {
+    const acc = this.adminStatistics()?.model_accuracy;
+    if (acc === null || acc === undefined) return '0.00';
+    // If the accuracy is already formatted as a percentage (> 1), just format it,
+    // otherwise multiply by 100 to convert fraction to percentage.
+    const percentage = acc <= 1 ? acc * 100 : acc;
+    return percentage.toFixed(2);
   }
 
   // ── Charts ────────────────────────────────────────────────────────

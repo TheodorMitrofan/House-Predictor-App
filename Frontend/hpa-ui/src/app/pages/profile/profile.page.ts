@@ -1,7 +1,13 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { MessageService } from 'primeng/api';
 import { UserService } from '../../shared/services/user.service';
+import { PredictionService, PredictionField } from '../prediction/services/prediction.service';
+import { Prediction, PropertyType } from '../prediction/models/Prediction';
+import { SearchDTO, Filter, Sorter } from '../../shared/models/search-dto';
 
 interface ProfileForm {
   name: string;
@@ -18,21 +24,19 @@ interface ActivityStat {
   bg: string;
 }
 
-interface RecentPrediction {
-  id: string;
-  location: string;
-  propertyType: string;
-  date: string;
-  predictedPrice: number;
-  confidence: number;
-}
-
 @Component({
   templateUrl: 'profile.page.html',
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    TableModule,
+    DecimalPipe,
+  ],
 })
 export class ProfilePage implements OnInit {
   private readonly userService = inject(UserService);
+  private readonly predictionService = inject(PredictionService);
   private readonly messages = inject(MessageService);
 
   saving = signal<boolean>(false);
@@ -58,19 +62,29 @@ export class ProfilePage implements OnInit {
       && f.bio.trim().length > 0;
   });
 
+  // ── Dynamic Prediction Stats ──────────────────────────────────────
+  totalPredictions = signal<number>(0);
+  avgPredictedPrice = signal<number>(0);
+  avgConfidence = signal<number>(0);
+
   readonly activityStats = computed<ActivityStat[]>(() => [
-    { label: 'Total Predictions', value: '24', icon: 'pi-chart-bar', color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Avg. Predicted Price', value: '$845,000', icon: 'pi-chart-line', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Avg. Confidence', value: '92%', icon: 'pi-bolt', color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Total Predictions', value: this.totalPredictions().toString(), icon: 'pi-chart-bar', color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Avg. Predicted Price', value: this.formatPrice(this.avgPredictedPrice()), icon: 'pi-chart-line', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Avg. Confidence', value: `${this.avgConfidence()}%`, icon: 'pi-bolt', color: 'text-violet-600', bg: 'bg-violet-50' },
     { label: 'Member Since', value: this.formatJoinDate(this.user()?.created_date), icon: 'pi-calendar', color: 'text-orange-600', bg: 'bg-orange-50' },
   ]);
 
-  readonly recentPredictions = signal<RecentPrediction[]>([
-    { id: '1', location: '1245 Market St, San Francisco, CA', propertyType: 'Condo', date: '2026-04-18', predictedPrice: 1250000, confidence: 94 },
-    { id: '2', location: '88 Sunset Blvd, Los Angeles, CA', propertyType: 'Single Family', date: '2026-04-15', predictedPrice: 980000, confidence: 91 },
-    { id: '3', location: '42 Pine Ave, Seattle, WA', propertyType: 'Townhouse', date: '2026-04-10', predictedPrice: 720000, confidence: 88 },
-    { id: '4', location: '301 Ocean Dr, Miami, FL', propertyType: 'Condo', date: '2026-04-05', predictedPrice: 640000, confidence: 90 },
-  ]);
+  // ── Pagination, Search & Sorting State ────────────────────────────
+  predictions = signal<Prediction[]>([]);
+  totalCount = signal<number>(0);
+  loading = signal<boolean>(false);
+  first = signal<number>(0);
+  readonly pageSize = 5; // Compact size for profile page list
+
+  searchTerm = signal<string>('');
+  selectedPropertyType = signal<'All' | PropertyType>('All');
+  readonly propertyTypes: ('All' | PropertyType)[] = ['All', 'Apartment', 'House', 'Villa'];
+  currentSorters = signal<Sorter<PredictionField>[]>([{ field: 'created_at', direction: 'desc' }]);
 
   async ngOnInit() {
     if (!this.user()) {
@@ -85,8 +99,101 @@ export class ProfilePage implements OnInit {
         bio: u.description ?? '',
       });
     }
+    await this.loadStats();
   }
 
+  // ── Load Stats Dynamically ────────────────────────────────────────
+  private async loadStats(): Promise<void> {
+    try {
+      const dto: SearchDTO<PredictionField> = {
+        filters: [],
+        sorters: [],
+        pagination: { page: 1, pageSize: 100 },
+      };
+      const res = await this.predictionService.search(dto);
+      this.totalPredictions.set(res.pagination.totalElements);
+      
+      const results = res.results;
+      if (results.length > 0) {
+        const priceSum = results.reduce((acc, p) => acc + p.prediction_value, 0);
+        this.avgPredictedPrice.set(Math.round(priceSum / results.length));
+        
+        const confSum = results.reduce((acc, p) => acc + p.confidence, 0);
+        this.avgConfidence.set(Math.round((confSum / results.length) * 100));
+      } else {
+        this.avgPredictedPrice.set(0);
+        this.avgConfidence.set(0);
+      }
+    } catch {
+      // Fallback in case prediction list fails to load
+    }
+  }
+
+  // ── Lazy Load prediction history with filtering/sorting ───────────
+  public async onLazyLoad(event: TableLazyLoadEvent): Promise<void> {
+    const first = event.first ?? 0;
+    const rows = event.rows ?? this.pageSize;
+    this.first.set(first);
+
+    if (event.sortField) {
+      const field = event.sortField as PredictionField;
+      const direction = event.sortOrder === 1 ? 'asc' : 'desc';
+      this.currentSorters.set([{ field, direction }]);
+    } else {
+      this.currentSorters.set([{ field: 'created_at', direction: 'desc' }]);
+    }
+
+    await this.loadHistory();
+  }
+
+  public async loadHistory(): Promise<void> {
+    this.loading.set(true);
+    const page = Math.floor(this.first() / this.pageSize) + 1;
+
+    const filters: Filter<PredictionField>[] = [];
+    const searchVal = this.searchTerm().trim();
+    if (searchVal) {
+      filters.push({ field: 'location', operator: 'contains', value: searchVal });
+    }
+    const typeVal = this.selectedPropertyType();
+    if (typeVal !== 'All') {
+      filters.push({ field: 'property_type', operator: 'eq', value: typeVal });
+    }
+
+    const dto: SearchDTO<PredictionField> = {
+      filters,
+      sorters: this.currentSorters(),
+      pagination: { page, pageSize: this.pageSize },
+    };
+
+    try {
+      const res = await this.predictionService.search(dto);
+      this.predictions.set(res.results);
+      this.totalCount.set(res.pagination.totalElements);
+    } catch {
+      this.messages.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Could not load prediction history.',
+      });
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  public onSearchChange(newVal: string): void {
+    this.searchTerm.set(newVal);
+    this.first.set(0);
+    this.loadHistory();
+  }
+
+  public selectPropertyType(type: 'All' | PropertyType): void {
+    this.selectedPropertyType.set(type);
+    this.first.set(0);
+    this.loadHistory();
+  }
+
+  // ── Helpers & Formatting ──────────────────────────────────────────
   private formatJoinDate(iso?: string): string {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -110,6 +217,24 @@ export class ProfilePage implements OnInit {
     }).format(price);
   }
 
+  // ── Confidence Class Mappers ──────────────────────────────────────
+  public confidenceBadgeClass(conf: number): string {
+    if (conf >= 0.90) {
+      return 'bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 border border-emerald-100';
+    }
+    if (conf >= 0.80) {
+      return 'bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 border border-amber-100';
+    }
+    return 'bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 border border-rose-100';
+  }
+
+  public confidenceDotClass(conf: number): string {
+    if (conf >= 0.90) return 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+    if (conf >= 0.80) return 'w-1.5 h-1.5 rounded-full bg-amber-500';
+    return 'w-1.5 h-1.5 rounded-full bg-rose-500';
+  }
+
+  // ── Form Input & Edit profile handlers ─────────────────────────────
   public onFieldChange(key: keyof ProfileForm, event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
     this.form.update((f) => ({ ...f, [key]: value }));

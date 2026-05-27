@@ -46,7 +46,7 @@ export class UserDashboardPage implements OnInit {
   newThisWeek = signal<number>(0);
 
   // ── Model info ────────────────────────────────────────────────────
-  modelAccuracy = signal<number>(0);
+  modelAccuracy = signal<string>('0.00');
   modelVersion = signal<string>('v1.0.0');
   modelStatus = signal<boolean>(false);
 
@@ -172,7 +172,9 @@ export class UserDashboardPage implements OnInit {
       // 2. Fetch active model info
       const activeModel = await this.trainingService.getActiveModel();
       if (activeModel) {
-        this.modelAccuracy.set(Math.round(activeModel.accuracy * 1000) / 10);
+        const acc = activeModel.accuracy;
+        const percentage = acc <= 1 ? acc * 100 : acc;
+        this.modelAccuracy.set(percentage.toFixed(2));
         this.modelVersion.set(activeModel.version ? `v${activeModel.version}` : 'v1.0.0');
         this.modelStatus.set(activeModel.success);
       }
