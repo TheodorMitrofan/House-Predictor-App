@@ -49,7 +49,7 @@ def generate_explanation(prediction) -> str:
         model=settings.OPENAI_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=250,
-        temperature=0.4,
+        temperature=0.2,
     )
     return response.choices[0].message.content.strip()
 
@@ -117,6 +117,6 @@ def generate_tips(prediction) -> dict:
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         max_tokens=1400,
-        temperature=0.3,
+        temperature=0.2,
     )
     return json.loads(response.choices[0].message.content)
