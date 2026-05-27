@@ -94,7 +94,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: hpa
       KEYCLOAK_CLIENT_ID: hpa-backend
-      KEYCLOAK_CLIENT_SECRET: 5kGweyVC1WteOLC1woeZzEl9oLr1RDSz
+      KEYCLOAK_CLIENT_SECRET: 8FORQHDdpbYUDbBzPbxwv9wnT7RSo5ow
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
