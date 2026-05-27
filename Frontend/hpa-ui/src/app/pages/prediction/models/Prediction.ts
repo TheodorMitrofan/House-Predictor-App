@@ -11,9 +11,12 @@ export interface PredictionTip {
 export interface AiTip {
   category: string;
   action: string;
+  example?: string;
+  resource?: string;
   cost_min: number;
   cost_max: number;
   value_added: number;
+  roi_percent?: number;
 }
 
 export interface AiTipsResponse {
