@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environment/environment';
-import { Prediction, PredictionRequest } from '../models/Prediction';
+import { AiTipsResponse, Prediction, PredictionRequest } from '../models/Prediction';
 
 @Injectable({ providedIn: 'root' })
 export class PredictionService {
@@ -27,6 +27,18 @@ export class PredictionService {
     if (type && type !== 'All') params['type'] = type;
     return firstValueFrom(
       this.http.get<Prediction[]>(`${this.baseUrl}/history/`, { params }),
+    );
+  }
+
+  async generateAIExplanation(id: string): Promise<{ explanation: string }> {
+    return firstValueFrom(
+      this.http.post<{ explanation: string }>(`${this.baseUrl}/${id}/ai-explain/`, {}),
+    );
+  }
+
+  async generateAITips(id: string): Promise<AiTipsResponse> {
+    return firstValueFrom(
+      this.http.post<AiTipsResponse>(`${this.baseUrl}/${id}/ai-tips/`, {}),
     );
   }
 }

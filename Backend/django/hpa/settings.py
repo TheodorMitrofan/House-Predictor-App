@@ -58,3 +58,8 @@ MINIO_BUCKET     = os.getenv("MINIO_BUCKET",     "hpa-models")
 
 # ── ML Service ────────────────────────────────────────────────────────
 ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
+
+# ── AI Service (OpenAI-compatible) ────────────────────────────────────
+OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY",  "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_MODEL    = os.getenv("OPENAI_MODEL",    "gpt-4o-mini")

@@ -8,6 +8,21 @@ export interface PredictionTip {
   value_added: number;
 }
 
+export interface AiTip {
+  category: string;
+  action: string;
+  cost_min: number;
+  cost_max: number;
+  value_added: number;
+}
+
+export interface AiTipsResponse {
+  total_investment_min: number;
+  total_investment_max: number;
+  potential_value_gain: number;
+  tips: AiTip[];
+}
+
 export interface Prediction {
   id: string;
   prediction_value: number;
