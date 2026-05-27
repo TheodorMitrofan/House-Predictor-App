@@ -1,0 +1,165 @@
+<div class="max-w-6xl mx-auto space-y-6 px-4 sm:px-6 py-8">
+
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-gray-900 text-2xl font-bold tracking-tight">Prediction History</h1>
+      <p class="text-gray-500 text-sm mt-1">
+        {{ totalCount() }} total prediction{{ totalCount() !== 1 ? 's' : '' }}
+      </p>
+    </div>
+    
+    <a routerLink="/dashboard/predict"
+       class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+      <i class="pi pi-plus"></i>
+      New Prediction
+    </a>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <!-- Left: Search Box -->
+    <div class="relative flex-1 max-w-md w-full">
+      <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      <input
+        type="text"
+        placeholder="Search location or type..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+        class="w-full rounded-xl border border-gray-200 pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-gray-50/50 hover:bg-gray-50"
+      />
+    </div>
+
+    <!-- Right: Property Type Filter -->
+    <div class="flex items-center gap-3 overflow-x-auto py-1 scrollbar-none">
+      <span class="text-sm font-medium text-gray-500 flex items-center gap-1.5 whitespace-nowrap">
+        <i class="pi pi-filter text-gray-400"></i> Type:
+      </span>
+      <div class="flex items-center gap-1.5">
+        @for (type of propertyTypes; track type) {
+          <button
+            type="button"
+            (click)="selectPropertyType(type)"
+            [ngClass]="selectedPropertyType() === type ? 'bg-blue-600 text-white shadow-sm border-blue-600' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
+            class="rounded-full border px-4 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap"
+          >
+            {{ type }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- History List Table -->
+  <p-card styleClass="!shadow-sm !rounded-xl !border !border-gray-200 overflow-hidden">
+    <p-table
+      [value]="predictions()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalCount()"
+      [first]="first()"
+      [loading]="loading()"
+      (onLazyLoad)="onLazyLoad($event)"
+      [tableStyle]="{ 'min-width': '60rem' }"
+      styleClass="p-datatable-striped"
+    >
+      <ng-template #header>
+        <tr class="!bg-gray-50/70 border-b border-gray-200">
+          <th pSortableColumn="created_at" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-4 px-6 hover:!bg-gray-100/80 transition-colors">
+            Date <p-sortIcon field="created_at" />
+          </th>
+          <th pSortableColumn="location" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-4 px-6 hover:!bg-gray-100/80 transition-colors">
+            Location <p-sortIcon field="location" />
+          </th>
+          <th class="text-xs font-bold text-gray-500 uppercase tracking-wider py-4 px-6">
+            Property
+          </th>
+          <th pSortableColumn="prediction_value" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-4 px-6 hover:!bg-gray-100/80 transition-colors">
+            Predicted Price <p-sortIcon field="prediction_value" />
+          </th>
+          <th pSortableColumn="confidence" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-4 px-6 hover:!bg-gray-100/80 transition-colors">
+            Confidence <p-sortIcon field="confidence" />
+          </th>
+          <th class="text-xs font-bold text-gray-500 uppercase tracking-wider py-4 px-6 text-center">
+            Actions
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-p>
+        <tr class="hover:bg-gray-50/50 transition border-b border-gray-100 last:border-b-0">
+          <!-- Date -->
+          <td class="py-4 px-6 text-sm text-gray-600 font-medium">
+            {{ formatDate(p.created_at) }}
+          </td>
+
+          <!-- Location -->
+          <td class="py-4 px-6">
+            <div class="flex items-center gap-2 text-sm text-gray-700 font-semibold">
+              <i class="pi pi-map-marker text-gray-400 text-xs"></i>
+              <span>{{ p.location }}</span>
+            </div>
+          </td>
+
+          <!-- Property specs -->
+          <td class="py-4 px-6">
+            <div class="flex flex-col">
+              <span class="text-sm font-semibold text-gray-800">{{ p.property_type }}</span>
+              <span class="text-xs text-gray-400 mt-0.5">
+                {{ p.bedrooms | number:'1.0-0' }} bed · {{ p.floor_area | number:'1.0-0' }}m² · {{ p.year_built | number:'1.0-0' }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Predicted price -->
+          <td class="py-4 px-6 text-sm font-bold text-gray-900">
+            {{ formatPrice(p.prediction_value) }}
+          </td>
+
+          <!-- Confidence percentage badge -->
+          <td class="py-4 px-6">
+            <span [class]="confidenceBadgeClass(p.confidence)">
+              <span [class]="confidenceDotClass(p.confidence)"></span>
+              {{ (p.confidence * 100) | number:'1.0-0' }}%
+            </span>
+          </td>
+
+          <!-- View details action -->
+          <td class="py-4 px-6 text-center">
+            <button
+              type="button"
+              (click)="viewDetails(p.id)"
+              class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100/70 hover:text-blue-700 font-semibold text-xs transition cursor-pointer"
+            >
+              <i class="pi pi-eye"></i>
+              View Details
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <!-- Empty/No Data state -->
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6" class="py-16 text-center text-gray-400">
+            <div class="flex flex-col items-center justify-center gap-3">
+              <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 text-lg border border-gray-100">
+                <i class="pi pi-history"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-700">No predictions found</p>
+                <p class="text-xs text-gray-400 mt-0.5">Try adjusting your search criteria or start a new prediction.</p>
+              </div>
+              <a routerLink="/dashboard/predict"
+                 class="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-sm hover:bg-blue-700 transition">
+                <i class="pi pi-plus"></i> New Prediction
+              </a>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+</div>

@@ -72,24 +72,24 @@
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">Floor Area</span>
-            <span class="font-medium text-gray-900">{{ p.floor_area }} m²</span>
+            <span class="font-medium text-gray-900">{{ p.floor_area | number:'1.0-0' }} m²</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">Bedrooms</span>
-            <span class="font-medium text-gray-900">{{ p.bedrooms }}</span>
+            <span class="font-medium text-gray-900">{{ p.bedrooms | number:'1.0-0' }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">Bathrooms</span>
-            <span class="font-medium text-gray-900">{{ p.bathrooms }}</span>
+            <span class="font-medium text-gray-900">{{ p.bathrooms | number:'1.0-0' }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">Year Built</span>
-            <span class="font-medium text-gray-900">{{ p.year_built }}</span>
+            <span class="font-medium text-gray-900">{{ p.year_built | number:'1.0-0' }}</span>
           </div>
           @if (p.floor_number) {
             <div class="flex justify-between">
               <span class="text-gray-500">Floor</span>
-              <span class="font-medium text-gray-900">{{ p.floor_number }}</span>
+              <span class="font-medium text-gray-900">{{ p.floor_number | number:'1.0-0' }}</span>
             </div>
           }
         </div>

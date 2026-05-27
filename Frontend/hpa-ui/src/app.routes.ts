@@ -9,6 +9,7 @@ import { DataManagementPage } from './app/pages/data-management/data-management.
 import { ModelTrainingPage } from './app/pages/model-training/model-training.page';
 import { NewPredictionPage } from './app/pages/prediction/new-prediction/new-prediction.page';
 import { PredictionResultPage } from './app/pages/prediction/prediction-result/prediction-result.page';
+import { HistoryPage } from './app/pages/prediction/history/history.page';
 import { authGuard } from './app/shared/guards/auth.guard';
 import { adminGuard } from './app/shared/guards/admin.guard';
 
@@ -27,6 +28,7 @@ export const routes: Routes = [
       { path: "model-training", component: ModelTrainingPage, canActivate: [adminGuard] },
       { path: "predict", component: NewPredictionPage },
       { path: "predict/result/:id", component: PredictionResultPage },
+      { path: "history", component: HistoryPage },
     ],
   },
 ];

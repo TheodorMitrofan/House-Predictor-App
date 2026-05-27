@@ -5,6 +5,9 @@ import { UIChart } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
 import { UserService } from '../../../shared/services/user.service';
 import { Router } from '@angular/router';
+import { PredictionService, PredictionField } from '../../prediction/services/prediction.service';
+import { ModelTrainingService } from '../../model-training/services/model-training.service';
+import { SearchDTO } from '../../../shared/models/search-dto';
 
 interface RecentPrediction {
   id: string;
@@ -23,6 +26,8 @@ export class UserDashboardPage implements OnInit {
 
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
+  private readonly predictionService = inject(PredictionService);
+  private readonly trainingService = inject(ModelTrainingService);
 
   user = this.userService.currentUser;
 
@@ -33,26 +38,20 @@ export class UserDashboardPage implements OnInit {
     return 'Good evening';
   });
 
-  // ── Hardcoded stats ───────────────────────────────────────────────
-  totalPredictions = signal<number>(24);
-  lastPredictedPrice = signal<number>(875000);
-  lastPredictedLocation = signal<string>('New York, NY');
-  averagePredictedValue = signal<number>(586000);
-  newThisWeek = signal<number>(3);
+  // ── Dynamic stats ─────────────────────────────────────────────────
+  totalPredictions = signal<number>(0);
+  lastPredictedPrice = signal<number>(0);
+  lastPredictedLocation = signal<string>('No predictions yet');
+  averagePredictedValue = signal<number>(0);
+  newThisWeek = signal<number>(0);
 
   // ── Model info ────────────────────────────────────────────────────
-  modelAccuracy = signal<number>(94.2);
-  modelVersion = signal<string>('v3.2.1');
-  modelStatus = signal<boolean>(true);
+  modelAccuracy = signal<number>(0);
+  modelVersion = signal<string>('v1.0.0');
+  modelStatus = signal<boolean>(false);
 
-  // ── Recent predictions (hardcoded) ────────────────────────────────
-  recentPredictions = signal<RecentPrediction[]>([
-    { id: '1', location: 'New York, NY',  property: 'Apartment · 3br · 120m²',  predictedPrice: 875000,  confidence: 92, date: '2026-03-10' },
-    { id: '2', location: 'Austin, TX',    property: 'House · 4br · 210m²',      predictedPrice: 620000,  confidence: 88, date: '2026-03-07' },
-    { id: '3', location: 'Miami, FL',     property: 'Condo · 2br · 85m²',       predictedPrice: 410000,  confidence: 79, date: '2026-02-28' },
-    { id: '4', location: 'Seattle, WA',   property: 'Townhouse · 3br · 160m²',  predictedPrice: 730000,  confidence: 85, date: '2026-02-20' },
-    { id: '5', location: 'Denver, CO',    property: 'House · 3br · 175m²',      predictedPrice: 540000,  confidence: 91, date: '2026-02-15' },
-  ]);
+  // ── Recent predictions ────────────────────────────────────────────
+  recentPredictions = signal<RecentPrediction[]>([]);
 
   // ── Chart ─────────────────────────────────────────────────────────
   predictionTrendData = {
@@ -60,7 +59,7 @@ export class UserDashboardPage implements OnInit {
     datasets: [
       {
         label: 'Predicted Price',
-        data: [250000, 350000, 280000, 720000, 650000, 950000],
+        data: [0, 0, 0, 0, 0, 0],
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.08)',
         fill: true,
@@ -104,6 +103,81 @@ export class UserDashboardPage implements OnInit {
   async ngOnInit(): Promise<void> {
     if (!this.user()) {
       await this.userService.load();
+    }
+    await this.loadDashboardData();
+  }
+
+  async loadDashboardData(): Promise<void> {
+    try {
+      // 1. Fetch recent predictions (last 100 to compute stats and chart)
+      const dto: SearchDTO<PredictionField> = {
+        filters: [],
+        sorters: [{ field: 'created_at', direction: 'desc' }],
+        pagination: { page: 1, pageSize: 100 }
+      };
+      
+      const res = await this.predictionService.search(dto);
+      const results = res.results;
+      
+      this.totalPredictions.set(res.pagination.totalElements);
+      
+      // Calculate "new this week"
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const recentCount = results.filter(p => new Date(p.created_at) >= oneWeekAgo).length;
+      this.newThisWeek.set(recentCount);
+
+      if (results.length > 0) {
+        this.lastPredictedPrice.set(results[0].prediction_value);
+        this.lastPredictedLocation.set(results[0].location);
+        
+        const sum = results.reduce((acc, curr) => acc + curr.prediction_value, 0);
+        this.averagePredictedValue.set(Math.round(sum / results.length));
+        
+        // Map to recentPredictions UI model (top 5 recent)
+        const recent = results.slice(0, 5).map(p => ({
+          id: p.id,
+          location: p.location,
+          property: `${p.property_type} · ${Math.round(p.bedrooms)} bed · ${Math.round(p.floor_area)}m²`,
+          predictedPrice: p.prediction_value,
+          confidence: Math.round(p.confidence * 100),
+          date: p.created_at.slice(0, 10)
+        }));
+        this.recentPredictions.set(recent);
+        
+        // Update Chart with last 6 predictions trend
+        const chartPredictions = [...results].slice(0, 6).reverse();
+        const labels = chartPredictions.map(p => {
+          const d = new Date(p.created_at);
+          return d.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const data = chartPredictions.map(p => p.prediction_value);
+        
+        this.predictionTrendData = {
+          labels,
+          datasets: [
+            {
+              ...this.predictionTrendData.datasets[0],
+              data
+            }
+          ]
+        };
+      } else {
+        this.lastPredictedPrice.set(0);
+        this.lastPredictedLocation.set('No predictions yet');
+        this.averagePredictedValue.set(0);
+        this.recentPredictions.set([]);
+      }
+      
+      // 2. Fetch active model info
+      const activeModel = await this.trainingService.getActiveModel();
+      if (activeModel) {
+        this.modelAccuracy.set(Math.round(activeModel.accuracy * 1000) / 10);
+        this.modelVersion.set(activeModel.version ? `v${activeModel.version}` : 'v1.0.0');
+        this.modelStatus.set(activeModel.success);
+      }
+    } catch (e) {
+      console.error('Could not load user dashboard statistics', e);
     }
   }
 

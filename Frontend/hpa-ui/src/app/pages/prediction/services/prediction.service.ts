@@ -9,7 +9,7 @@ import { PagedResult } from '../../../shared/models/paged-result';
 export type PredictionField =
   | 'property_type' | 'location' | 'bedrooms' | 'bathrooms'
   | 'has_parking' | 'has_pool' | 'has_balcony' | 'has_elevator'
-  | 'created_at' | 'prediction_value' | 'floor_area' | 'year_built';
+  | 'created_at' | 'prediction_value' | 'floor_area' | 'year_built' | 'confidence';
 
 @Injectable({ providedIn: 'root' })
 export class PredictionService {
