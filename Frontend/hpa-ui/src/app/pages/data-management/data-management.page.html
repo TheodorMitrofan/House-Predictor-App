@@ -38,11 +38,11 @@
       <ng-template #body let-entry>
         <tr class="hover:bg-gray-50 transition-colors">
           <td class="px-5 py-3.5 text-sm font-medium text-gray-900 whitespace-nowrap">{{ entry.zipcode }}</td>
-          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.bedrooms }}</td>
-          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.bathrooms }}</td>
-          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.sqft_living }}</td>
-          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.floors }}</td>
-          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.yr_built }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.bedrooms | number:'1.0-0' }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.bathrooms | number:'1.0-0' }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.sqft_living | number:'1.0-0' }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.floors | number:'1.0-0' }}</td>
+          <td class="px-5 py-3.5 text-sm text-gray-600">{{ entry.yr_built ? entry.yr_built.toFixed(0) : '' }}</td>
           <td class="px-5 py-3.5">
             <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">{{ entry.grade }}</span>
           </td>
