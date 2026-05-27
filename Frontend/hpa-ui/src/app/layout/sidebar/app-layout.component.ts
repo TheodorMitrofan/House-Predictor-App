@@ -1,5 +1,5 @@
 import { SidebarFooterComponent } from './components/sidebar-footer.component';
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarProviderComponent } from './components/sidebar-provider.component';
@@ -13,6 +13,7 @@ import { SidebarInsetComponent } from './components/sidebar-inset.component';
 import { SidebarGroupLabelComponent } from './components/sidebar-group-label.component';
 import { AuthService } from '../../pages/auth/services/auth.service';
 import { UserService } from '../../shared/services/user.service';
+import { ModelTrainingService } from '../../pages/model-training/services/model-training.service';
 
 @Component({
   selector: "app-layout",
@@ -60,6 +61,10 @@ import { UserService } from '../../shared/services/user.service';
                 <app-sidebar-menu-item label="Data Management" route="/dashboard/data-management">
                   <i icon class="pi pi-database"></i>
                 </app-sidebar-menu-item>
+
+                <app-sidebar-menu-item label="Model Training" route="/dashboard/model-training">
+                  <i icon class="pi pi-cog"></i>
+                </app-sidebar-menu-item>
               } @else {
                 <app-sidebar-menu-item label="New Prediction" route="/dashboard/predict">
                   <i icon class="pi pi-plus-circle"></i>
@@ -98,16 +103,24 @@ import { UserService } from '../../shared/services/user.service';
       </app-sidebar>
 
       <app-sidebar-inset>
+        @if (predictionsPaused()) {
+          <div class="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-700 text-sm">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Serviciul de predicţii este temporar suspendat — modelul se reantrenează.</span>
+          </div>
+        }
         <router-outlet />
       </app-sidebar-inset>
     </app-sidebar-provider>
   `,
 })
-export class AppLayoutComponent implements OnInit {
+export class AppLayoutComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService)
   private readonly userService = inject(UserService)
+  private readonly trainingService = inject(ModelTrainingService);
 
   currentUser = this.userService.currentUser;
+  predictionsPaused = signal<boolean>(false);
 
   isAdmin = computed(() => this.currentUser()?.role === 'admin');
 
@@ -115,10 +128,30 @@ export class AppLayoutComponent implements OnInit {
     this.isAdmin() ? '/dashboard/admin' : '/dashboard/user'
   );
 
+  private statusPollTimer: ReturnType<typeof setInterval> | null = null;
+
   async ngOnInit() {
     if (!this.currentUser()) {
       await this.userService.load();
     }
+    this.startStatusPolling();
+  }
+
+  ngOnDestroy(): void {
+    if (this.statusPollTimer) clearInterval(this.statusPollTimer);
+  }
+
+  private startStatusPolling(): void {
+    const tick = async () => {
+      try {
+        const s = await this.trainingService.getStatus();
+        this.predictionsPaused.set(s.status === 'running');
+      } catch {
+        this.predictionsPaused.set(false);
+      }
+    };
+    tick();
+    this.statusPollTimer = setInterval(tick, 10_000);
   }
 
   public computeInitials(): string {

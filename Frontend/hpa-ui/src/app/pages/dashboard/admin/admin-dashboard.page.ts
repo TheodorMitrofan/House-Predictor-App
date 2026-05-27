@@ -4,13 +4,14 @@ import { NgClass } from '@angular/common';
 import { UIChart } from 'primeng/chart';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { InputText } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { User } from '../../auth/models/User';
 import { AdminStatisticsService } from '../services/admin-statistics.service';
 import { AdminStatistics } from '../models/AdminStatistics';
-import { UserService } from '../../../shared/services/user.service';
+import { UserService, UserField } from '../../../shared/services/user.service';
+import { Filter, SearchDTO } from '../../../shared/models/search-dto';
 
 interface UserForm {
   full_name: string;
@@ -40,10 +41,15 @@ export class AdminDashboardPage implements OnInit {
 
   adminStatistics = signal<AdminStatistics | null>(null);
   users = signal<User[]>([]);
-  allUsers = signal<User[]>([]);
 
   activeFilter = signal<'All' | 'User' | 'Admin'>('All');
   searchQuery = signal<string>('');
+
+  // Pagination state
+  readonly pageSize = 20;
+  totalUsers = signal<number>(0);
+  first = signal<number>(0);
+  loadingUsers = signal<boolean>(false);
 
   // Modal state
   showModal = signal<boolean>(false);
@@ -57,16 +63,47 @@ export class AdminDashboardPage implements OnInit {
   async ngOnInit(): Promise<void> {
     const data = await this.adminStatisticsService.getStatistics();
     this.adminStatistics.set(data);
-    await this.loadUsers();
+    // Initial users load is triggered by PrimeNG's lazy table via onLazyLoad.
   }
 
-  private async loadUsers(): Promise<void> {
-    const search = this.searchQuery();
-    const filter = this.activeFilter();
-    const role = filter === 'All' ? undefined : filter;
-    const data = await this.userService.getUsers(search || undefined, role);
-    this.allUsers.set(data);
-    this.users.set(data.map(u => ({ ...u, prediction: u.prediction ?? 0 })));
+  async onLazyLoad(event: TableLazyLoadEvent): Promise<void> {
+    const first = event.first ?? 0;
+    const rows = event.rows ?? this.pageSize;
+    this.first.set(first);
+    await this.loadUsers(first, rows);
+  }
+
+  private async loadUsers(first?: number, rows?: number): Promise<void> {
+    const pageFirst = first ?? this.first();
+    const pageRows = rows ?? this.pageSize;
+
+    const filters: Filter<UserField>[] = [];
+    if (this.activeFilter() !== 'All') {
+      filters.push({ field: 'role', operator: 'eq', value: this.activeFilter().toLowerCase() });
+    }
+    if (this.searchQuery()) {
+      filters.push({ field: 'full_name', operator: 'contains', value: this.searchQuery() });
+    }
+
+    const dto: SearchDTO<UserField> = {
+      filters,
+      sorters: [],
+      pagination: { page: Math.floor(pageFirst / pageRows) + 1, pageSize: pageRows },
+    };
+
+    this.loadingUsers.set(true);
+    try {
+      const res = await this.userService.searchUsers(dto);
+      this.users.set(res.results.map(u => ({ ...u, prediction: u.prediction ?? 0 })));
+      this.totalUsers.set(res.pagination.totalElements);
+    } finally {
+      this.loadingUsers.set(false);
+    }
+  }
+
+  private reloadFromStart(): void {
+    this.first.set(0);
+    this.loadUsers(0, this.pageSize);
   }
 
   // ── Stats helpers ─────────────────────────────────────────────────
@@ -218,12 +255,12 @@ export class AdminDashboardPage implements OnInit {
   onSearch(value: string): void {
     this.searchQuery.set(value);
     if (this.searchTimeout) clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(() => this.loadUsers(), 300);
+    this.searchTimeout = setTimeout(() => this.reloadFromStart(), 300);
   }
 
   onFilterChange(f: string): void {
     this.activeFilter.set(f as 'All' | 'User' | 'Admin');
-    this.loadUsers();
+    this.reloadFromStart();
   }
 
   // ── Add User ──────────────────────────────────────────────────────

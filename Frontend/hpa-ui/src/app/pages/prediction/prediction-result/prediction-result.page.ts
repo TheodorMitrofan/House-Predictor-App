@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DecimalPipe, NgClass } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { PredictionService } from '../services/prediction.service';
 import { AiTipsResponse, Prediction } from '../models/Prediction';
 
@@ -20,7 +20,7 @@ const DEFAULT_CAT = { emoji: '✨', badge: 'bg-indigo-100 text-indigo-800', bg: 
 
 @Component({
   templateUrl: 'prediction-result.page.html',
-  imports: [NgClass, RouterModule, DecimalPipe],
+  imports: [RouterModule, DecimalPipe],
 })
 export class PredictionResultPage implements OnInit {
   private readonly route = inject(ActivatedRoute);

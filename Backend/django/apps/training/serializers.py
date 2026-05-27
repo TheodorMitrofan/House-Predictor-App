@@ -6,9 +6,9 @@ class RunHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = RunHistory
         fields = [
-            "id", "date", "duration", "accuracy",
+            "id", "date", "duration", "accuracy", "rmse",
             "dataset_size", "success", "is_active",
-            "version", "model_path",
+            "version", "model_path", "error_message",
         ]
         read_only_fields = fields
 

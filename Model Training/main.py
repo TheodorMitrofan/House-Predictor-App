@@ -16,6 +16,7 @@ from schemas import PredictionRequest, PredictionResponse
 from model_loader import load_active_model, get_model, get_meta, get_feature_names
 from features import build_feature_vector, build_price_factors, generate_tips
 from trainer import run_retrain
+import training_state as state
 
 
 @asynccontextmanager
@@ -34,6 +35,11 @@ app = FastAPI(title="ProphetAI ML Service", version="1.0.0", lifespan=lifespan)
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict(req: PredictionRequest):
+    if state.is_running():
+        raise HTTPException(
+            status_code=503,
+            detail="Modelul se reantrenează — predicţiile sunt temporar suspendate.",
+        )
     model = get_model()
 
     X = build_feature_vector(req)
@@ -80,8 +86,19 @@ def retrain(background_tasks: BackgroundTasks):
     Returns immediately — training runs in the background.
     Angular shows a progress state while this is running.
     """
+    if state.is_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Există deja o reantrenare în curs.",
+        )
     background_tasks.add_task(run_retrain)
     return {"message": "Reantrenare pornită în background."}
+
+
+@app.get("/training-status")
+def training_status():
+    """Polled by the Angular Model Training page every ~1.5s during a retrain."""
+    return state.get_state()
 
 
 @app.post("/reload-model")

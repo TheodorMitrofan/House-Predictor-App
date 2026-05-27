@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
+from apps.common.search import SearchSerializer, apply_search, paginated_response
 from .models import Prediction
 from .serializers import PredictionRequestSerializer, PredictionSerializer
 from .ai_service import generate_explanation, generate_tips
@@ -54,25 +55,28 @@ class PredictionCreateView(APIView):
         return Response(PredictionSerializer(prediction).data, status=status.HTTP_201_CREATED)
 
 
-class PredictionListView(APIView):
-    """GET /api/predictions/history/  — [Profile] Vizualizare Istoric Predictii"""
+class PredictionSearchView(APIView):
+    """POST /api/predictions/search/  — current user's predictions, paginated"""
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        predictions = Prediction.objects.filter(user=request.user)
+    ALLOWED_EQ = {
+        "property_type", "bedrooms", "bathrooms",
+        "has_parking", "has_pool", "has_balcony", "has_elevator",
+    }
+    ALLOWED_CONTAINS = {"location", "property_type"}
+    ALLOWED_SORT = {"created_at", "prediction_value", "floor_area", "year_built", "location", "confidence", "property_type"}
 
-        search    = request.query_params.get("search", "")
-        prop_type = request.query_params.get("type", "")
-
-        if search:
-            predictions = (
-                predictions.filter(location__icontains=search)
-                | predictions.filter(property_type__icontains=search)
-            )
-        if prop_type and prop_type != "All":
-            predictions = predictions.filter(property_type=prop_type)
-
-        return Response(PredictionSerializer(predictions, many=True).data)
+    def post(self, request):
+        search = SearchSerializer(data=request.data)
+        search.is_valid(raise_exception=True)
+        qs = apply_search(
+            Prediction.objects.filter(user=request.user),
+            search.validated_data,
+            allowed_eq=self.ALLOWED_EQ,
+            allowed_contains=self.ALLOWED_CONTAINS,
+            allowed_sort=self.ALLOWED_SORT,
+        )
+        return paginated_response(qs, search.validated_data, PredictionSerializer)
 
 
 class PredictionDetailView(APIView):

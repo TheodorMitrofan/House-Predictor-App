@@ -2,7 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { MessageService } from 'primeng/api';
 import { TrainingData } from './models/TrainingData';
-import { DataManagementService } from './services/data-management.service';
+import { DataManagementService, TrainingDataField } from './services/data-management.service';
+import { SearchDTO } from '../../shared/models/search-dto';
 
 interface EntryForm {
   zipcode: number;
@@ -61,10 +62,15 @@ export class DataManagementPage {
   private async loadData(first: number, rows: number): Promise<void> {
     this.loading.set(true);
     const page = Math.floor(first / rows) + 1;
+    const dto: SearchDTO<TrainingDataField> = {
+      filters: [],
+      sorters: [],
+      pagination: { page, pageSize: rows },
+    };
     try {
-      const res = await this.dataService.list(page, rows);
+      const res = await this.dataService.search(dto);
       this.data.set(res.results);
-      this.totalCount.set(res.count);
+      this.totalCount.set(res.pagination.totalElements);
     } catch {
       this.messages.add({
         severity: 'error',
