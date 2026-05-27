@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { MessageService } from 'primeng/api';
 import { TrainingData } from './models/TrainingData';
@@ -31,7 +32,7 @@ const DEFAULT_FORM: EntryForm = {
 
 @Component({
   templateUrl: 'data-management.page.html',
-  imports: [TableModule],
+  imports: [TableModule, CommonModule, DecimalPipe],
 })
 export class DataManagementPage {
   private readonly dataService = inject(DataManagementService);
