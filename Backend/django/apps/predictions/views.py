@@ -63,7 +63,7 @@ class PredictionSearchView(APIView):
         "has_parking", "has_pool", "has_balcony", "has_elevator",
     }
     ALLOWED_CONTAINS = {"location", "property_type"}
-    ALLOWED_SORT = {"created_at", "prediction_value", "floor_area", "year_built"}
+    ALLOWED_SORT = {"created_at", "prediction_value", "floor_area", "year_built", "location", "confidence", "property_type"}
 
     def post(self, request):
         search = SearchSerializer(data=request.data)

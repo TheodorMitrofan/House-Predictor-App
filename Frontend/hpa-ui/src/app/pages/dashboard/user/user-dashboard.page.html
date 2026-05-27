@@ -7,7 +7,7 @@
       <p class="text-gray-500 text-lg mt-0.5">Here's what's happening with your property predictions.</p>
     </div>
     <button
-      (click)="navigateTo('/predict')"
+      (click)="navigateTo('/dashboard/predict')"
       class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
     >
       <i class="pi pi-plus-circle text-sm"></i>
@@ -80,7 +80,7 @@
         <p class="text-gray-900 font-bold text-lg mb-4">Quick Actions</p>
 
         <button
-          (click)="navigateTo('/predict')"
+          (click)="navigateTo('/dashboard/predict')"
           class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group mb-2"
         >
           <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
@@ -94,7 +94,7 @@
         </button>
 
         <button
-          (click)="navigateTo('/history')"
+          (click)="navigateTo('/dashboard/history')"
           class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
         >
           <div class="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center shrink-0">
@@ -139,7 +139,7 @@
     <div class="flex items-center justify-between mb-4">
       <p class="text-gray-900 font-bold text-lg">Recent Predictions</p>
       <button
-        (click)="navigateTo('/history')"
+        (click)="navigateTo('/dashboard/history')"
         class="flex items-center gap-1.5 text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors"
       >
         View all
@@ -196,7 +196,7 @@
 
           <!-- Details -->
           <td>
-            <button class="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors">
+            <button (click)="navigateTo('/dashboard/predict/result/' + pred.id)" class="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors">
               Details
             </button>
           </td>
