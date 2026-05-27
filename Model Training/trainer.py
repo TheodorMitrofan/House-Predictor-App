@@ -57,7 +57,7 @@ FEATURE_COLS = [
     "waterfront_enc",
 ]
 TARGET_COL = "price"
-CRITICAL_RAW_COLS = ["price", "bedrooms", "bathrooms", "sqft_living", "yr_built", "zipcode"]
+CRITICAL_RAW_COLS = ["price", "bedrooms", "bathrooms", "sqft_living", "house_age", "zipcode"]
 
 
 def _load_training_data(engine) -> pd.DataFrame:
