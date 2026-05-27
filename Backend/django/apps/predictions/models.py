@@ -19,6 +19,9 @@ class Prediction(models.Model):
     tips = models.JSONField(blank=True, null=True)
 
     # Feature toggles (pills in the UI)
+    ai_explanation = models.TextField(blank=True, null=True, db_column="aiExplanation")
+    ai_tips_data   = models.JSONField(blank=True, null=True, db_column="aiTipsData")
+
     has_parking = models.BooleanField(default=False, db_column="hasParking")
     has_pool = models.BooleanField(default=False, db_column="hasPool")
     has_balcony = models.BooleanField(default=False, db_column="hasBalcony")

@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from apps.common.search import SearchSerializer, apply_search, paginated_response
 from .models import Prediction
 from .serializers import PredictionRequestSerializer, PredictionSerializer
+from .ai_service import generate_explanation, generate_tips
 
 
 def call_ml_service(payload: dict) -> dict:
@@ -88,3 +89,59 @@ class PredictionDetailView(APIView):
         except Prediction.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(PredictionSerializer(prediction).data)
+
+
+class AIExplainView(APIView):
+    """POST /api/predictions/<id>/ai-explain/  — AI explanation for a prediction"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, prediction_id):
+        try:
+            prediction = Prediction.objects.get(id=prediction_id, user=request.user)
+        except Prediction.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if prediction.ai_explanation:
+            return Response({"explanation": prediction.ai_explanation})
+
+        if not settings.OPENAI_API_KEY:
+            return Response(
+                {"error": "AI service not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            explanation = generate_explanation(prediction)
+            prediction.ai_explanation = explanation
+            prediction.save(update_fields=["ai_explanation"])
+            return Response({"explanation": explanation})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class AITipsView(APIView):
+    """POST /api/predictions/<id>/ai-tips/  — AI renovation tips"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, prediction_id):
+        try:
+            prediction = Prediction.objects.get(id=prediction_id, user=request.user)
+        except Prediction.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if prediction.ai_tips_data:
+            return Response(prediction.ai_tips_data)
+
+        if not settings.OPENAI_API_KEY:
+            return Response(
+                {"error": "AI service not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            tips_data = generate_tips(prediction)
+            prediction.ai_tips_data = tips_data
+            prediction.save(update_fields=["ai_tips_data"])
+            return Response(tips_data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

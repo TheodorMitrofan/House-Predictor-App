@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environment/environment';
-import { Prediction, PredictionRequest } from '../models/Prediction';
+import { AiTipsResponse, Prediction, PredictionRequest } from '../models/Prediction';
 import { SearchDTO } from '../../../shared/models/search-dto';
 import { PagedResult } from '../../../shared/models/paged-result';
 
@@ -31,6 +31,18 @@ export class PredictionService {
   async search(dto: SearchDTO<PredictionField>): Promise<PagedResult<Prediction>> {
     return firstValueFrom(
       this.http.post<PagedResult<Prediction>>(`${this.baseUrl}/search/`, dto),
+    );
+  }
+
+  async generateAIExplanation(id: string): Promise<{ explanation: string }> {
+    return firstValueFrom(
+      this.http.post<{ explanation: string }>(`${this.baseUrl}/${id}/ai-explain/`, {}),
+    );
+  }
+
+  async generateAITips(id: string): Promise<AiTipsResponse> {
+    return firstValueFrom(
+      this.http.post<AiTipsResponse>(`${this.baseUrl}/${id}/ai-tips/`, {}),
     );
   }
 }

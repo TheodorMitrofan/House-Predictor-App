@@ -3,15 +3,18 @@ Script to load house_prices.csv into the PostgreSQL database.
 Creates a 'house_prices' table and inserts all rows from the CSV.
 """
 
+import os
 import pandas as pd
 from sqlalchemy import create_engine
 
-# Database connection settings (from docker/postgres.yml)
+# Database connection settings — override DB_HOST via env var when running
+# from a VM/container where localhost doesn't reach the Docker host.
+# e.g.:  DB_HOST=host.docker.internal python load_csv_to_db.py
 DB_NAME = "hpa"
 DB_USER = "hpa"
 DB_PASSWORD = "hpa"
-DB_HOST = "localhost"
-DB_PORT = "5432"
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
 
 CSV_PATH = r"../house_prices.csv"
 TABLE_NAME = "training_data"

@@ -22,18 +22,18 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.4
-    platform: linux/arm64   # force native ARM64 — amd64 via Rosetta 2 crashes in BigInteger.mulAdd
     container_name: hpa-keycloak
     command: start-dev
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      # Use PostgreSQL instead of the default embedded H2.
-      # H2 has a known concurrent-update bug when creating realms in dev mode.
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/hpa
       KC_DB_USERNAME: hpa
       KC_DB_PASSWORD: hpa
+      KC_DB_POOL_MIN_SIZE: "5"
+      KC_DB_POOL_MAX_SIZE: "20"
+      KC_TRANSACTION_XA_ENABLED: "false"
     ports:
       - "8080:8080"
       # port 9000 is Keycloak's internal management port used only by the health check
@@ -99,6 +99,9 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: hpa-models
+      OPENAI_API_KEY: 
+      OPENAI_BASE_URL: https://api.openai.com/v1
+      OPENAI_MODEL: gpt-4o-mini
     ports:
       - "8000:8000"
     volumes:
